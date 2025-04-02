@@ -1,4 +1,3 @@
-local HHgm = 5.5
 -- Dandy's World
 local Poltergeist = loadstring(game:HttpGet("https://raw.githubusercontent.com/berhddb/Library/refs/heads/main/Main", true))()
 
@@ -32,22 +31,20 @@ local Window = Poltergeist:CreateWindow({
 local Tab = Window:CreateHomeTab({
     Icon = 1,
     SupportedExecutors = {"Xeno", "Sonar", "Solara", "Swift", "Argon"},
-    DiscordInvite = "noinvitelink"
+    DiscordInvite = "c5mZwdzbHx"
 })
 
--- Create General tab
-local GeneralTab = Window:CreateTab({
-    Name = "General",
-    Icon = "laptop",
+-- Create Visual tab
+local VisualTab = Window:CreateTab({
+    Name = "Visual",
+    Icon = "visibility",
     ImageSource = "Material",
     ShowTitle = true
 })
 
-GeneralTab:CreateSection("Visual")
-
 -- Generator ESP System
 local GeneratorESP = false
-local GeneratorESPToggle = GeneralTab:CreateToggle({
+local GeneratorESPToggle = VisualTab:CreateToggle({
     Name = "🔧 Generator ESP",
     Description = "Highlights incomplete generators",
     CurrentValue = false,
@@ -152,7 +149,7 @@ end
 
 -- Twisted ESP System
 local TwistedESP = false
-local TwistedESPToggle = GeneralTab:CreateToggle({
+local TwistedESPToggle = VisualTab:CreateToggle({
     Name = "🩸 Twisted ESP",
     Description = "Highlights Twisteds with a red glow",
     CurrentValue = false,
@@ -255,7 +252,7 @@ local function FindItemsFolder()
     return nil
 end
 
-local ItemEspToggle = GeneralTab:CreateToggle({
+local ItemEspToggle = VisualTab:CreateToggle({
     Name = "🔍 Item ESP",
     Description = "Highlights items",
     CurrentValue = false,
@@ -357,7 +354,7 @@ end
 
 -- Player ESP System
 local PlayerEsp = false
-local PlayerEspToggle = GeneralTab:CreateToggle({
+local PlayerEspToggle = VisualTab:CreateToggle({
     Name = "👤 Player ESP",
     Description = "Highlights alive players",
     CurrentValue = false,
@@ -452,7 +449,7 @@ function CleanUpPlayerEsp()
 end
 
 NVPU = false
-local NoVeePopUps = GeneralTab:CreateButton({
+local NoVeePopUps = VisualTab:CreateButton({
     Name = "🖥️ No Vee pop-ups",
     Description = "Disable pop-ups of twisted Vee",
     Callback = function()
@@ -482,7 +479,13 @@ local NoVeePopUps = GeneralTab:CreateButton({
     end
 })
 
-GeneralTab:CreateSection("Others")
+-- Create General tab
+local GeneralTab = Window:CreateTab({
+    Name = "General",
+    Icon = "calendar_today",
+    ImageSource = "Material",
+    ShowTitle = true
+})
 
 local ASCValue = false
 local AutoSkillCheck = GeneralTab:CreateButton({
@@ -518,13 +521,11 @@ local AutoSkillCheck = GeneralTab:CreateButton({
     end
 })
 
-local FBValue = false
 local FullBright = GeneralTab:CreateButton({
     Name = "💡 Fullbright",
     Description = "Remove game darkness",
     Callback = function()
-        if FBValue == false then
-            FBValue = true
+        if game.Lighting.Brightness ~= 2 then 
             local Lighting = game:GetService("Lighting")
             Lighting.Brightness = 2
             Lighting.ClockTime = 14
@@ -545,6 +546,36 @@ local FullBright = GeneralTab:CreateButton({
                 Icon = "notifications_active",
                 ImageSource = "Material",
                 Content = "Fullbright is already activated"
+            })
+        end
+    end
+})
+
+local disFB = GeneralTab:CreateButton({
+    Name = "❌💡 Disable fullbright",
+    Description = "Disable the fullbright effect",
+    Callback = function()
+        if game.Lighting.Brightness == 2 then 
+            local Lighting = game:GetService("Lighting")
+            Lighting.Brightness = 3
+            Lighting.ClockTime = 0
+            Lighting.FogEnd = 250
+            Lighting.GlobalShadows = true
+            Lighting.OutdoorAmbient = Color3.fromRGB(0, 0, 0)
+            sound(8486683243)
+            Poltergeist:Notification({ 
+                Title = "Notification",
+                Icon = "notifications_active",
+                ImageSource = "Material",
+                Content = "Fullbright disabled"
+            })
+        else
+            sound(17208361335)
+            Poltergeist:Notification({ 
+                Title = "Notification",
+                Icon = "notifications_active",
+                ImageSource = "Material",
+                Content = "Fullbright is not activated"
             })
         end
     end
@@ -649,7 +680,13 @@ local AutoGTEToggle = GeneralTab:CreateToggle({
     end
 })
 
-GeneralTab:CreateSection("Player")
+-- Create Player tab
+local PlayerTab = Window:CreateTab({
+    Name = "Player",
+    Icon = "account_circle",
+    ImageSource = "Material",
+    ShowTitle = true
+})
 
 local tpWalking = false
 local localPlayer = game:GetService("Players").LocalPlayer
@@ -674,7 +711,7 @@ local function StopTeleportWalk()
     tpWalking = false
 end
 
-local TpWalkSpeedSlider = GeneralTab:CreateSlider({
+local TpWalkSpeedSlider = PlayerTab:CreateSlider({
     Name = "Teleport Walk Speed",
     Description = "Adjust movement speed multiplier",
     Range = {0.1, 5},
@@ -688,7 +725,7 @@ local TpWalkSpeedSlider = GeneralTab:CreateSlider({
     end
 })
 
-local TpWalkToggle = GeneralTab:CreateToggle({
+local TpWalkToggle = PlayerTab:CreateToggle({
     Name = "🚀 Teleport Walk",
     Description = "Enhanced movement speed",
     CurrentValue = false,
@@ -724,7 +761,7 @@ localPlayer.CharacterAdded:Connect(function()
 end)
 
 local Noclip = false
-local NoclipToggle = GeneralTab:CreateToggle({
+local NoclipToggle = PlayerTab:CreateToggle({
     Name = "👻 Noclip",
     Description = "turns you into a POLTERGEIST bOooOooOoo",
     CurrentValue = false,
@@ -783,7 +820,7 @@ local NoclipToggle = GeneralTab:CreateToggle({
 })
 
 local GodMode = false
-local GodModeToggle = GeneralTab:CreateToggle({
+local GodModeToggle = PlayerTab:CreateToggle({
     Name = "🌌 God Mode",
     Description = "Makes you immune to twisteds (thx G0byD0llan for the inspiration to make this function)",
     CurrentValue = false,
@@ -866,7 +903,7 @@ local GodModeToggle = GeneralTab:CreateToggle({
 })
 
 local JumpValue = false
-local JumpBTN = GeneralTab:CreateButton({
+local JumpBTN = PlayerTab:CreateButton({
     Name = "🦘 Jump button",
     Description = "Creates a bypass jump button (not made by me, created by FoxcatLol on Discord.)",
     Callback = function()
@@ -947,3 +984,60 @@ local JumpBTN = GeneralTab:CreateButton({
         end
     end
 })
+
+-- Create Others tab
+local OthersTab = Window:CreateTab({
+    Name = "Others",
+    Icon = "add_circle",
+    ImageSource = "Material",
+    ShowTitle = true
+})
+
+local GDscript = OthersTab:CreateButton({
+    Name = "G0bbyD0llan script",
+    Description = "Loads G0bbyD0llan's script (Great script!! ,'D)",
+    Callback = function()
+          loadstring(game:HttpGet("https://pastebin.com/raw/FBRnb7S7"))()
+            sound(8486683243)
+            Poltergeist:Notification({ 
+                Title = "Notification",
+                Icon = "notifications_active",
+                ImageSource = "Material",
+                Content = "Script loaded!"
+            })
+        
+    end
+})
+
+local GACscript = OthersTab:CreateButton({
+    Name = "Glisten's animation closet",
+    Description = "Loads Glisten's animation closet (dw animations XD)",
+    Callback = function()
+         loadstring(game:HttpGet("https://raw.githubusercontent.com/RodeStriker/TheDandyHelper/refs/heads/main/GAC"))()
+            sound(8486683243)
+            Poltergeist:Notification({ 
+                Title = "Notification",
+                Icon = "notifications_active",
+                ImageSource = "Material",
+                Content = "Script loaded!"
+            })
+        
+    end
+})
+
+local Nscript = OthersTab:CreateButton({
+    Name = "Noxious Hub",
+    Description = "Loads Noxious Hub (Made by Unable :o)",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/NXSendeavor/endeavor/refs/heads/main/DSWDendeavor"))()
+            sound(8486683243)
+            Poltergeist:Notification({ 
+                Title = "Notification",
+                Icon = "notifications_active",
+                ImageSource = "Material",
+                Content = "Script loaded!"
+            })
+        
+    end
+})
+
