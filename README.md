@@ -871,7 +871,7 @@ local GodModeToggle = PlayerTab:CreateToggle({
                     if LPGettingChased() then
                      local currentRoom = game.Workspace:WaitForChild("CurrentRoom")
                     if currentRoom.Monsters:FindFirstChild("DandyMonster") or currentRoom.Monsters:FindFirstChild("VeeMonster") or currentRoom.Monsters:FindFirstChild("SproutMonster") or currentRoom.Monsters:FindFirstChild("ShellyMonster") or currentRoom.Monsters:FindFirstChild("PebbleMonster") then
-                     CHH(8)
+                     CHH(7)
                     else
                                         CHH(5.5)
                                         end
