@@ -1,6 +1,9 @@
 -- Dandy's World
 local Poltergeist = loadstring(game:HttpGet("https://raw.githubusercontent.com/berhddb/Library/refs/heads/main/Main", true))()
+local VirtualInputManager = game:GetService('VirtualInputManager')
+local player = game.Players.LocalPlayer
 
+-- Sound function
 local function sound(id)
     local sound = Instance.new("Sound")
     sound.SoundId = "rbxassetid://"..id
@@ -27,14 +30,7 @@ local Window = Poltergeist:CreateWindow({
     KeySystem = false
 })
 
--- Create main tab
-local Tab = Window:CreateHomeTab({
-    Icon = 1,
-    SupportedExecutors = {"Xeno", "Sonar", "Solara", "Swift", "Argon"},
-    DiscordInvite = "c5mZwdzbHx"
-})
-
--- Create Visual tab
+-- Create tabs
 local VisualTab = Window:CreateTab({
     Name = "Visual",
     Icon = "visibility",
@@ -42,8 +38,109 @@ local VisualTab = Window:CreateTab({
     ShowTitle = true
 })
 
+local GeneralTab = Window:CreateTab({
+    Name = "General",
+    Icon = "calendar_today",
+    ImageSource = "Material",
+    ShowTitle = true
+})
+
+local PlayerTab = Window:CreateTab({
+    Name = "Player",
+    Icon = "account_circle",
+    ImageSource = "Material",
+    ShowTitle = true
+})
+
+local OthersTab = Window:CreateTab({
+    Name = "Others",
+    Icon = "add_circle",
+    ImageSource = "Material",
+    ShowTitle = true
+})
+
+-- ESP Utility Functions
+local function createESP(object, name, color, offset)
+    if not object then return end
+    
+    local highlight = Instance.new("Highlight")
+    highlight.Name = name.."Highlight"
+    highlight.FillColor = color
+    highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+    highlight.FillTransparency = 0.3
+    highlight.Parent = object
+    
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = name.."ESP"
+    billboard.Size = UDim2.new(1, 200, 1, 30)
+    billboard.AlwaysOnTop = true
+    billboard.Adornee = object:FindFirstChild("HumanoidRootPart") or object:FindFirstChild("Main") or object.PrimaryPart
+    billboard.ExtentsOffset = Vector3.new(0, offset or 2, 0)
+    billboard.Parent = object
+    
+    local label = Instance.new("TextLabel")
+    label.Text = name
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.Font = Enum.Font.SourceSansBold
+    label.TextSize = 12
+    label.TextColor3 = color
+    label.BackgroundTransparency = 1
+    label.Parent = billboard
+    
+    return highlight, billboard
+end
+
+local function updateDistanceESP(object, name)
+    if not object or not object:FindFirstChild(name.."ESP") then return end
+    
+    local root = object:FindFirstChild("HumanoidRootPart") or object:FindFirstChild("Main") or object.PrimaryPart
+    if not root then return end
+    
+    local localHead = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Head")
+    if not localHead then return end
+    
+    local dist = (localHead.Position - root.Position).Magnitude
+    object[name.."ESP"].TextLabel.Text = string.format("%s [%.1fm]", name, dist)
+end
+
 -- Generator ESP System
 local GeneratorESP = false
+local generatorCache = {}
+
+local function UpdateGeneratorESP()
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("Model") and obj.Name == "Generator" then
+            pcall(function()
+                local stats = obj:FindFirstChild("Stats")
+                if stats and stats:FindFirstChild("Completed") then
+                    if not stats.Completed.Value and not generatorCache[obj] then
+                        createESP(obj, "Generator", Color3.fromRGB(0, 255, 0))
+                        generatorCache[obj] = true
+                    elseif stats.Completed.Value and generatorCache[obj] then
+                        if obj:FindFirstChild("GeneratorHighlight") then obj.GeneratorHighlight:Destroy() end
+                        if obj:FindFirstChild("GeneratorESP") then obj.GeneratorESP:Destroy() end
+                        generatorCache[obj] = nil
+                    end
+                    
+                    if generatorCache[obj] then
+                        updateDistanceESP(obj, "Generator")
+                    end
+                end
+            end)
+        end
+    end
+end
+
+local function CleanUpGeneratorESP()
+    for obj in pairs(generatorCache) do
+        if obj.Parent then
+            if obj:FindFirstChild("GeneratorHighlight") then obj.GeneratorHighlight:Destroy() end
+            if obj:FindFirstChild("GeneratorESP") then obj.GeneratorESP:Destroy() end
+        end
+    end
+    generatorCache = {}
+end
+
 local GeneratorESPToggle = VisualTab:CreateToggle({
     Name = "🔧 Generator ESP",
     Description = "Highlights incomplete generators",
@@ -58,12 +155,15 @@ local GeneratorESPToggle = VisualTab:CreateToggle({
                 ImageSource = "Material",
                 Content = "Generator ESP has been activated"
             })
-            coroutine.wrap(function()
-                while GeneratorESP do
-                    UpdateGeneratorESP()
-                    wait(1)
+            
+            local conn
+            conn = game:GetService("RunService").Heartbeat:Connect(function()
+                if not GeneratorESP then 
+                    conn:Disconnect()
+                    return
                 end
-            end)()
+                UpdateGeneratorESP()
+            end)
         else
             sound(17208361335)
             Poltergeist:Notification({ 
@@ -77,78 +177,35 @@ local GeneratorESPToggle = VisualTab:CreateToggle({
     end
 })
 
-function UpdateGeneratorESP()
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj:IsA("Model") and obj.Name == "Generator" then
-            pcall(function()
-                local stats = obj:FindFirstChild("Stats")
-                if stats and stats:FindFirstChild("Completed") then
-                    if not stats.Completed.Value then
-                        if not obj:FindFirstChild("GeneratorHighlight") then
-                            local highlight = Instance.new("Highlight")
-                            highlight.Name = "GeneratorHighlight"
-                            highlight.FillColor = Color3.fromRGB(0, 255, 0)
-                            highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-                            highlight.Parent = obj
-                            
-                            local billboard = Instance.new("BillboardGui", obj)
-                            billboard.Name = "GeneratorESP"
-                            billboard.Size = UDim2.new(1, 200, 1, 30)
-                            billboard.AlwaysOnTop = true
-                            billboard.Adornee = obj:FindFirstChild("Main") or obj.PrimaryPart
-                            billboard.ExtentsOffset = Vector3.new(0, 2, 0)
-                            
-                            local label = Instance.new("TextLabel", billboard)
-                            label.Text = "Generator"
-                            label.Size = UDim2.new(1, 0, 1, 0)
-                            label.Font = Enum.Font.SourceSansBold
-                            label.TextSize = 12
-                            label.TextColor3 = Color3.fromRGB(255, 255, 255)
-                            label.BackgroundTransparency = 1
-                        end
-                    else
-                        CleanUpGeneratorESP(obj)
-                    end
-                end
-            end)
-        end
-    end
-    
-    if game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Head") then
-        for _, obj in ipairs(workspace:GetDescendants()) do
-            if obj:IsA("Model") and obj.Name == "Generator" and obj:FindFirstChild("GeneratorESP") then
-                pcall(function()
-                    local root = obj:FindFirstChild("Main") or obj.PrimaryPart
-                    if root then
-                        local dist = (game.Players.LocalPlayer.Character.Head.Position - root.Position).Magnitude
-                        obj.GeneratorESP.TextLabel.Text = string.format("Generator [%.1fm]", dist)
-                    end
-                end)
-            end
-        end
-    end
-end
-
-function CleanUpGeneratorESP(specificObj)
-    if specificObj then
-        local highlight = specificObj:FindFirstChild("GeneratorHighlight")
-        if highlight then highlight:Destroy() end
-        local esp = specificObj:FindFirstChild("GeneratorESP")
-        if esp then esp:Destroy() end
-    else
-        for _, obj in ipairs(workspace:GetDescendants()) do
-            if obj:IsA("Model") and obj.Name == "Generator" then
-                local highlight = obj:FindFirstChild("GeneratorHighlight")
-                if highlight then highlight:Destroy() end
-                local esp = obj:FindFirstChild("GeneratorESP")
-                if esp then esp:Destroy() end
-            end
-        end
-    end
-end
-
 -- Twisted ESP System
 local TwistedESP = false
+local twistedCache = {}
+
+local function UpdateTwistedESP()
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("Model") and obj.Parent and obj.Parent.Name == "Monsters" and not twistedCache[obj] then
+            pcall(function()
+                createESP(obj, obj.Name, Color3.fromRGB(255, 0, 0), 3)
+                twistedCache[obj] = true
+            end)
+        end
+        
+        if twistedCache[obj] then
+            updateDistanceESP(obj, obj.Name)
+        end
+    end
+end
+
+local function CleanUpTwistedESP()
+    for obj in pairs(twistedCache) do
+        if obj.Parent then
+            if obj:FindFirstChild(obj.Name.."Highlight") then obj[obj.Name.."Highlight"]:Destroy() end
+            if obj:FindFirstChild(obj.Name.."ESP") then obj[obj.Name.."ESP"]:Destroy() end
+        end
+    end
+    twistedCache = {}
+end
+
 local TwistedESPToggle = VisualTab:CreateToggle({
     Name = "🩸 Twisted ESP",
     Description = "Highlights Twisteds with a red glow",
@@ -161,81 +218,29 @@ local TwistedESPToggle = VisualTab:CreateToggle({
                 Title = "Notification",
                 Icon = "notifications_active",
                 ImageSource = "Material",
-                Content = "Twisters ESP has been activated"
+                Content = "Twisted ESP has been activated"
             })
-            coroutine.wrap(function()
-                while TwistedESP do
-                    UpdateTwistedESP()
-                    wait(1)
+            
+            local conn
+            conn = game:GetService("RunService").Heartbeat:Connect(function()
+                if not TwistedESP then 
+                    conn:Disconnect()
+                    return
                 end
-            end)()
+                UpdateTwistedESP()
+            end)
         else
             sound(17208361335)
             Poltergeist:Notification({ 
                 Title = "Notification",
                 Icon = "notifications_active",
                 ImageSource = "Material",
-                Content = "Twisters ESP has been deactivated"
+                Content = "Twisted ESP has been deactivated"
             })
             CleanUpTwistedESP()
         end
     end
 })
-
-function UpdateTwistedESP()
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj:IsA("Model") and obj.Parent.Name == "Monsters" then
-            pcall(function()
-                if not obj:FindFirstChild("TwistedHighlight") then
-                    local highlight = Instance.new("Highlight")
-                    highlight.Name = "TwistedHighlight"
-                    highlight.FillColor = Color3.fromRGB(255, 0, 0)
-                    highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-                    highlight.FillTransparency = 0.4
-                    highlight.Parent = obj
-                    
-                    local billboard = Instance.new("BillboardGui", obj)
-                    billboard.Name = "TwistedESP"
-                    billboard.Size = UDim2.new(1, 200, 1, 30)
-                    billboard.AlwaysOnTop = true
-                    billboard.Adornee = obj:FindFirstChild("HumanoidRootPart") or obj.PrimaryPart
-                    billboard.ExtentsOffset = Vector3.new(0, 3, 0)
-                    
-                    local label = Instance.new("TextLabel", billboard)
-                    label.Text = obj.Name
-                    label.Size = UDim2.new(1, 0, 1, 0)
-                    label.Font = Enum.Font.SourceSansBold
-                    label.TextSize = 14
-                    label.TextColor3 = Color3.fromRGB(255, 50, 50)
-                    label.BackgroundTransparency = 1
-                end
-            end)
-        end
-    end
-    
-    if game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Head") then
-        for _, obj in ipairs(workspace:GetDescendants()) do
-            if obj:IsA("Model") and obj:FindFirstChild("TwistedESP") then
-                pcall(function()
-                    local root = obj:FindFirstChild("HumanoidRootPart") or obj.PrimaryPart
-                    if root then
-                        local dist = (game.Players.LocalPlayer.Character.Head.Position - root.Position).Magnitude
-                        obj.TwistedESP.TextLabel.Text = string.format(obj.name.." [%.1fm]", dist)
-                    end
-                end)
-            end
-        end
-    end
-end
-
-function CleanUpTwistedESP()
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        local highlight = obj:FindFirstChild("TwistedHighlight")
-        if highlight then highlight:Destroy() end
-        local esp = obj:FindFirstChild("TwistedESP")
-        if esp then esp:Destroy() end
-    end
-end
 
 -- Item ESP System
 local ItemESP = false
@@ -252,6 +257,40 @@ local function FindItemsFolder()
     return nil
 end
 
+local function UpdateItemESP()
+    local itemsFolder = FindItemsFolder()
+    if not itemsFolder then return end
+
+    for item in pairs(itemCache) do
+        if not item.Parent then
+            itemCache[item] = nil
+        end
+    end
+
+    for _, obj in ipairs(itemsFolder:GetChildren()) do
+        if obj:IsA("Model") and obj:FindFirstChild("Prompt") and not itemCache[obj] then
+            pcall(function()
+                createESP(obj, obj.Name, Color3.fromRGB(255, 215, 0))
+                itemCache[obj] = true
+            end)
+        end
+        
+        if itemCache[obj] then
+            updateDistanceESP(obj, obj.Name)
+        end
+    end
+end
+
+local function CleanUpItemESP()
+    for obj in pairs(itemCache) do
+        if obj.Parent then
+            if obj:FindFirstChild(obj.Name.."Highlight") then obj[obj.Name.."Highlight"]:Destroy() end
+            if obj:FindFirstChild(obj.Name.."ESP") then obj[obj.Name.."ESP"]:Destroy() end
+        end
+    end
+    itemCache = {}
+end
+
 local ItemEspToggle = VisualTab:CreateToggle({
     Name = "🔍 Item ESP",
     Description = "Highlights items",
@@ -266,12 +305,15 @@ local ItemEspToggle = VisualTab:CreateToggle({
                 ImageSource = "Material",
                 Content = "Item ESP has been activated"
             })
-            coroutine.wrap(function()
-                while ItemESP do
-                    UpdateItemESP()
-                    wait(1)
+            
+            local conn
+            conn = game:GetService("RunService").Heartbeat:Connect(function()
+                if not ItemESP then 
+                    conn:Disconnect()
+                    return
                 end
-            end)()
+                UpdateItemESP()
+            end)
         else
             CleanUpItemESP()
             sound(17208361335)
@@ -285,75 +327,39 @@ local ItemEspToggle = VisualTab:CreateToggle({
     end
 })
 
-function UpdateItemESP()
-    local itemsFolder = FindItemsFolder()
-    if not itemsFolder then return end
+-- Player ESP System
+local PlayerEsp = false
+local playerCache = {}
 
-    for item, _ in pairs(itemCache) do
-        if not item.Parent then
-            itemCache[item] = nil
-        end
-    end
-
-    for _, obj in ipairs(itemsFolder:GetChildren()) do
-        if obj:IsA("Model") and obj:FindFirstChild("Prompt") and not itemCache[obj] then
+local function UpdatePlayerEsp()
+    for _, player in ipairs(game.Players:GetPlayers()) do
+        if player ~= game.Players.LocalPlayer and player.Character and not playerCache[player] then
             pcall(function()
-                local highlight = Instance.new("Highlight")
-                highlight.Name = "ItemHighlight"
-                highlight.FillColor = Color3.fromRGB(255, 215, 0)
-                highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-                highlight.FillTransparency = 0.3
-                highlight.Parent = obj
-                
-                local billboard = Instance.new("BillboardGui", obj)
-                billboard.Name = "ItemESP"
-                billboard.Size = UDim2.new(1, 200, 1, 30)
-                billboard.AlwaysOnTop = true
-                billboard.Adornee = obj:FindFirstChild("Main") or obj.PrimaryPart
-                billboard.ExtentsOffset = Vector3.new(0, 2, 0)
-                
-                local label = Instance.new("TextLabel", billboard)
-                label.Text = obj.Name
-                label.Size = UDim2.new(1, 0, 1, 0)
-                label.Font = Enum.Font.SourceSansBold
-                label.TextSize = 12
-                label.TextColor3 = Color3.fromRGB(255, 215, 0)
-                label.BackgroundTransparency = 1
-                
-                itemCache[obj] = true
+                createESP(player.Character, player.Name, Color3.fromRGB(0, 0, 255))
+                playerCache[player] = true
             end)
         end
+        
+        if playerCache[player] and player.Character then
+            updateDistanceESP(player.Character, player.Name)
+        end
     end
-    
-    if game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Head") then
-        for obj, _ in pairs(itemCache) do
-            if obj.Parent and obj:FindFirstChild("ItemESP") then
-                pcall(function()
-                    local root = obj:FindFirstChild("Main") or obj.PrimaryPart
-                    if root then
-                        local dist = (game.Players.LocalPlayer.Character.Head.Position - root.Position).Magnitude
-                        obj.ItemESP.TextLabel.Text = string.format("%s [%.1fm]", obj.Name, dist)
-                    end
-                end)
+end
+
+local function CleanUpPlayerEsp()
+    for player in pairs(playerCache) do
+        if player.Character then
+            if player.Character:FindFirstChild(player.Name.."Highlight") then 
+                player.Character[player.Name.."Highlight"]:Destroy() 
+            end
+            if player.Character:FindFirstChild(player.Name.."ESP") then 
+                player.Character[player.Name.."ESP"]:Destroy() 
             end
         end
     end
+    playerCache = {}
 end
 
-function CleanUpItemESP()
-    for obj, _ in pairs(itemCache) do
-        if obj.Parent then
-            local highlight = obj:FindFirstChild("ItemHighlight")
-            if highlight then highlight:Destroy() end
-            local esp = obj:FindFirstChild("ItemESP")
-            if esp then esp:Destroy() end
-        end
-    end
-    itemCache = {}
-end
-
--- Player ESP System
-local PlayerEsp = false
 local PlayerEspToggle = VisualTab:CreateToggle({
     Name = "👤 Player ESP",
     Description = "Highlights alive players",
@@ -368,12 +374,15 @@ local PlayerEspToggle = VisualTab:CreateToggle({
                 ImageSource = "Material",
                 Content = "Player ESP has been activated"
             })
-            coroutine.wrap(function()
-                while PlayerEsp do
-                    UpdatePlayerEsp()
-                    wait(1)
+            
+            local conn
+            conn = game:GetService("RunService").Heartbeat:Connect(function()
+                if not PlayerEsp then 
+                    conn:Disconnect()
+                    return
                 end
-            end)()
+                UpdatePlayerEsp()
+            end)
         else
             sound(17208361335)
             Poltergeist:Notification({ 
@@ -387,87 +396,13 @@ local PlayerEspToggle = VisualTab:CreateToggle({
     end
 })
 
-function UpdatePlayerEsp()
-    for _, player in ipairs(game.Players:GetPlayers()) do
-        if player ~= game.Players.LocalPlayer and player.Character then
-            local obj = player.Character
-            pcall(function()
-                if not obj:FindFirstChild("PlayerHighlight") then
-                    local highlight = Instance.new("Highlight")
-                    highlight.Name = "PlayerHighlight"
-                    highlight.FillColor = Color3.fromRGB(0, 0, 255)
-                    highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-                    highlight.Parent = obj
-                    
-                    local billboard = Instance.new("BillboardGui", obj)
-                    billboard.Name = "PlayerEsp"
-                    billboard.Size = UDim2.new(1, 200, 1, 30)
-                    billboard.AlwaysOnTop = true
-                    billboard.Adornee = obj:FindFirstChild("HumanoidRootPart") or obj.PrimaryPart
-                    billboard.ExtentsOffset = Vector3.new(0, 2, 0)
-                    
-                    local label = Instance.new("TextLabel", billboard)
-                    label.Text = player.Name
-                    label.Size = UDim2.new(1, 0, 1, 0)
-                    label.Font = Enum.Font.SourceSansBold
-                    label.TextSize = 12
-                    label.TextColor3 = Color3.fromRGB(255, 255, 255)
-                    label.BackgroundTransparency = 1
-                end
-            end)
-        end
-    end
-    
-    if game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Head") then
-        for _, player in ipairs(game.Players:GetPlayers()) do
-            if player ~= game.Players.LocalPlayer and player.Character then
-                local obj = player.Character
-                if obj:FindFirstChild("PlayerEsp") then
-                    pcall(function()
-                        local root = obj:FindFirstChild("HumanoidRootPart") or obj.PrimaryPart
-                        if root then
-                            local dist = (game.Players.LocalPlayer.Character.Head.Position - root.Position).Magnitude
-                            obj.PlayerEsp.TextLabel.Text = string.format(player.Name.." [%.1fm]", dist)
-                        end
-                    end)
-                end
-            end
-        end
-    end
-end
-
-function CleanUpPlayerEsp()
-    for _, player in ipairs(game.Players:GetPlayers()) do
-        if player.Character then
-            local obj = player.Character
-            local highlight = obj:FindFirstChild("PlayerHighlight")
-            if highlight then highlight:Destroy() end
-            local esp = obj:FindFirstChild("PlayerEsp")
-            if esp then esp:Destroy() end
-        end
-    end
-end
-
-NVPU = false
+-- No Vee Pop-ups
+local NVPU = false
 local NoVeePopUps = VisualTab:CreateButton({
     Name = "🖥️ No Vee pop-ups",
     Description = "Disable pop-ups of twisted Vee",
     Callback = function()
-        if NVPU == false then
-            NVPU = true
-            if game.Players.LocalPlayer.PlayerGui:FindFirstChild("ScreenGui") then
-                if game.Players.LocalPlayer.PlayerGui.ScreenGui:FindFirstChild("PopUp") then
-                    game.Players.LocalPlayer.PlayerGui.ScreenGui.PopUp:Destroy()
-                end
-            end
-            sound(8486683243)
-            Poltergeist:Notification({ 
-                Title = "Notification",
-                Icon = "notifications_active",
-                ImageSource = "Material",
-                Content = "No Vee pop-ups has been activated"
-            })
-        else
+        if NVPU then
             sound(17208361335)
             Poltergeist:Notification({ 
                 Title = "Notification",
@@ -475,41 +410,32 @@ local NoVeePopUps = VisualTab:CreateButton({
                 ImageSource = "Material",
                 Content = "No Vee pop-ups is already activated"
             })
+            return
         end
+        
+        NVPU = true
+        if game.Players.LocalPlayer.PlayerGui:FindFirstChild("ScreenGui") then
+            if game.Players.LocalPlayer.PlayerGui.ScreenGui:FindFirstChild("PopUp") then
+                game.Players.LocalPlayer.PlayerGui.ScreenGui.PopUp:Destroy()
+            end
+        end
+        sound(8486683243)
+        Poltergeist:Notification({ 
+            Title = "Notification",
+            Icon = "notifications_active",
+            ImageSource = "Material",
+            Content = "No Vee pop-ups has been activated"
+        })
     end
 })
 
--- Create General tab
-local GeneralTab = Window:CreateTab({
-    Name = "General",
-    Icon = "calendar_today",
-    ImageSource = "Material",
-    ShowTitle = true
-})
-
+-- Auto Skill Check System
 local ASCValue = false
-local AutoSkillCheck = GeneralTab:CreateButton({
+local AutoSkillCheckBtn = GeneralTab:CreateButton({
     Name = "🤹‍♀️ Auto Skill Check",
     Description = "Automatically completes skill checks (the skill check dont appear)",
     Callback = function()
-        if ASCValue == false then
-            ASCValue = true
-            game.ReplicatedStorage.Events.SkillcheckUpdate.OnClientInvoke = function() return "supercomplete" end
-            sound(8486683243)
-            Poltergeist:Notification({ 
-                Title = "Notification",
-                Icon = "notifications_active",
-                ImageSource = "Material",
-                Content = "Auto Skill Check has been activated"
-            })
-            task.wait(0.2)
-            Poltergeist:Notification({ 
-                Title = "Notification",
-                Icon = "notifications_active",
-                ImageSource = "Material",
-                Content = "The skill check will not appear!"
-            })
-        else
+        if ASCValue then
             sound(17208361335)
             Poltergeist:Notification({ 
                 Title = "Notification",
@@ -517,16 +443,117 @@ local AutoSkillCheck = GeneralTab:CreateButton({
                 ImageSource = "Material",
                 Content = "Auto Skill Check is already activated"
             })
+            return
         end
+        
+        ASCValue = true
+        game.ReplicatedStorage.Events.SkillcheckUpdate.OnClientInvoke = function() return "supercomplete" end
+        sound(8486683243)
+        Poltergeist:Notification({ 
+            Title = "Notification",
+            Icon = "notifications_active",
+            ImageSource = "Material",
+            Content = "Auto Skill Check has been activated"
+        })
+        task.wait(0.2)
+        Poltergeist:Notification({ 
+            Title = "Notification",
+            Icon = "notifications_active",
+            ImageSource = "Material",
+            Content = "The skill check will not appear!"
+        })
     end
 })
 
+local function AutoSkillCheck()
+    local screenGui = player.PlayerGui:FindFirstChild("ScreenGui")
+    if not screenGui then return end
+
+    local menu = screenGui:FindFirstChild("Menu")
+    if not menu then return end
+
+    local skillCheckFrame = menu:FindFirstChild("SkillCheckFrame")
+    if not skillCheckFrame then return end
+
+    -- Constants
+    local TOLERANCE = 5 -- Adjust this value as needed
+
+    -- Function to perform the check when skill check frame is visible
+    local function onVisibilityChanged()
+        if skillCheckFrame.Visible then
+            local marker = skillCheckFrame:FindFirstChild("Marker")
+            local goldArea = skillCheckFrame:FindFirstChild("GoldArea")
+
+            if marker and goldArea then
+                local markerPosition = marker.AbsolutePosition
+                local goldAreaPosition = goldArea.AbsolutePosition
+                local goldAreaSize = goldArea.AbsoluteSize
+
+                -- Check if the Marker is within the bounds of the GoldArea
+                if markerPosition.X >= goldAreaPosition.X and 
+                   markerPosition.X <= (goldAreaPosition.X + goldAreaSize.X) + TOLERANCE then
+                    -- Send spacebar press event
+                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
+                    task.wait(0.1)
+                    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
+                end
+            end
+        end
+    end
+
+    -- Connect to the VisibilityChanged event
+    skillCheckFrame:GetPropertyChangedSignal("Visible"):Connect(onVisibilityChanged)
+
+    -- Detect changes in Marker and GoldArea positions
+    local marker = skillCheckFrame:FindFirstChild("Marker")
+    local goldArea = skillCheckFrame:FindFirstChild("GoldArea")
+
+    if marker then
+        marker:GetPropertyChangedSignal("AbsolutePosition"):Connect(onVisibilityChanged)
+    end
+
+    if goldArea then
+        goldArea:GetPropertyChangedSignal("AbsolutePosition"):Connect(onVisibilityChanged)
+        goldArea:GetPropertyChangedSignal("AbsoluteSize"):Connect(onVisibilityChanged)
+    end
+end
+
+-- Auto skill check 2 Feature
+local SC2A = false
+local SC2 = GeneralTab:CreateButton({
+    Name = "🏓 Auto Skill Check 2",
+    Description = "Automatically completes skill checks",
+    Callback = function()
+        if SC2A then
+            sound(17208361335)
+            Poltergeist:Notification({ 
+                Title = "Notification",
+                Icon = "notifications_active",
+                ImageSource = "Material",
+                Content = "Auto Skill Check is already activated"
+            })
+            return
+        end
+        
+        SC2A = true
+        AutoSkillCheck()
+        sound(8486683243)
+        Poltergeist:Notification({ 
+            Title = "Notification",
+            Icon = "notifications_active",
+            ImageSource = "Material",
+            Content = "Auto Skill Check has been activated."
+        })
+    end
+})
+
+-- Fullbright Feature
 local FullBright = GeneralTab:CreateButton({
     Name = "💡 Fullbright",
     Description = "Remove game darkness",
     Callback = function()
-        if game.Lighting.Brightness ~= 2 then 
-            local Lighting = game:GetService("Lighting")
+        local Lighting = game:GetService("Lighting")
+        if Lighting.Brightness ~= 2 then 
             Lighting.Brightness = 2
             Lighting.ClockTime = 14
             Lighting.FogEnd = 100000
@@ -581,6 +608,7 @@ local disFB = GeneralTab:CreateButton({
     end
 })
 
+
 local function fbwbodetect()
     if workspace.Info.BlackOut.Value == true then
         local Lighting = game:GetService("Lighting")
@@ -625,6 +653,8 @@ local FBwBOToggle = GeneralTab:CreateToggle({
     end
 })
 
+
+-- Auto GTE
 local AutoGTE = false
 local AutoGTEToggle = GeneralTab:CreateToggle({
     Name = "🏃 Auto GTE",
@@ -640,34 +670,39 @@ local AutoGTEToggle = GeneralTab:CreateToggle({
                 ImageSource = "Material",
                 Content = "Auto GTE has been activated"
             })
-            coroutine.wrap(function()
-                local workspace = game:GetService("Workspace")
-                local players = game:GetService("Players")
-                local infoFolder = workspace:FindFirstChild("Info")
-                if infoFolder then
-                    local panicBool = infoFolder:FindFirstChild("Panic")
-                    if panicBool and panicBool:IsA("BoolValue") then
-                        while AutoGTE do
-                            if panicBool.Value == true then       
-                                local elevatorsFolder = workspace:FindFirstChild("Elevators")              
-                                if elevatorsFolder then 
-                                    local elevatorModel = elevatorsFolder:FindFirstChildWhichIsA("Model")
-                                    if elevatorModel then  
-                                        local monsterBlocker = elevatorModel:FindFirstChild("MonsterBlocker")    
-                                        if monsterBlocker and monsterBlocker:IsA("Part") then
-                                            local character = game.Players.LocalPlayer.Character
-                                            if character and character:FindFirstChild("HumanoidRootPart") then
-                                                character.HumanoidRootPart.CFrame = monsterBlocker.CFrame
-                                            end
-                                        end
-                                    end
-                                end
-                            end
-                            wait(0.5)
-                        end
-                    end
+            
+            local conn
+            conn = game:GetService("RunService").Heartbeat:Connect(function()
+                if not AutoGTE then 
+                    conn:Disconnect()
+                    return
                 end
-            end)()
+                
+                local infoFolder = workspace:FindFirstChild("Info")
+                if not infoFolder then return end
+                
+                local panicBool = infoFolder:FindFirstChild("Panic")
+                if not panicBool or not panicBool:IsA("BoolValue") then return end
+                
+                if panicBool.Value then       
+                    local elevatorsFolder = workspace:FindFirstChild("Elevators")              
+                    if not elevatorsFolder then return end
+                    
+                    local elevatorModel = elevatorsFolder:FindFirstChildWhichIsA("Model")
+                    if not elevatorModel then return end
+                    
+                    local monsterBlocker = elevatorModel:FindFirstChild("MonsterBlocker")    
+                    if not monsterBlocker or not monsterBlocker:IsA("Part") then return end
+                    
+                    local character = game.Players.LocalPlayer.Character
+                    if not character then return end
+                    
+                    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+                    if not humanoidRootPart then return end
+                    
+                    humanoidRootPart.CFrame = monsterBlocker.CFrame
+                end
+            end)
         else
             sound(17208361335)
             Poltergeist:Notification({ 
@@ -680,31 +715,28 @@ local AutoGTEToggle = GeneralTab:CreateToggle({
     end
 })
 
--- Create Player tab
-local PlayerTab = Window:CreateTab({
-    Name = "Player",
-    Icon = "account_circle",
-    ImageSource = "Material",
-    ShowTitle = true
-})
-
+-- Player Tab Features
 local tpWalking = false
 local localPlayer = game:GetService("Players").LocalPlayer
 
 local function StartTeleportWalk(speedMultiplier)
     tpWalking = true
     
-    coroutine.wrap(function()
-        local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
-        local humanoid = character:WaitForChild("Humanoid")
-        
-        while tpWalking and character and humanoid and humanoid.Parent do
-            local delta = game:GetService("RunService").Heartbeat:Wait()
-            if humanoid.MoveDirection.Magnitude > 0 then
-                character:TranslateBy(humanoid.MoveDirection * speedMultiplier * delta * 10)
-            end
+    local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
+    local humanoid = character:WaitForChild("Humanoid")
+    
+    local conn
+    conn = game:GetService("RunService").Heartbeat:Connect(function()
+        if not tpWalking or not character or not humanoid or not humanoid.Parent then 
+            conn:Disconnect()
+            return
         end
-    end)()
+        
+        local delta = game:GetService("RunService").Heartbeat:Wait()
+        if humanoid.MoveDirection.Magnitude > 0 then
+            character:TranslateBy(humanoid.MoveDirection * speedMultiplier * delta * 10)
+        end
+    end)
 end
 
 local function StopTeleportWalk()
@@ -755,7 +787,7 @@ local TpWalkToggle = PlayerTab:CreateToggle({
 localPlayer.CharacterAdded:Connect(function()
     if TpWalkToggle and TpWalkToggle.CurrentValue then
         StopTeleportWalk()
-        wait(0.5)
+        task.wait(0.5)
         StartTeleportWalk(TpWalkSpeedSlider.CurrentValue)
     end
 end)
@@ -819,6 +851,7 @@ local NoclipToggle = PlayerTab:CreateToggle({
     end
 })
 
+-- God Mode
 local GodMode = false
 local GodModeToggle = PlayerTab:CreateToggle({
     Name = "🌌 God Mode",
@@ -834,12 +867,11 @@ local GodModeToggle = PlayerTab:CreateToggle({
                 ImageSource = "Material",
                 Content = "God Mode has been activated"
             })
+            
             local function LPGettingChased()
                 local currentRoom = game.Workspace:FindFirstChild("CurrentRoom")
-                if not currentRoom then 
-                    warn("CurrentRoom not found in Workspace")
-                    return false
-                end
+                if not currentRoom then return false end
+
                 for _, child in ipairs(currentRoom:GetChildren()) do
                     if child:IsA("Model") then
                         local monstersContainer = child:FindFirstChild("Monsters")
@@ -858,6 +890,7 @@ local GodModeToggle = PlayerTab:CreateToggle({
                 end
                 return false
             end
+
             local function CHH(height)
                 local player = game.Players.LocalPlayer
                 local character = player.Character or player.CharacterAdded:Wait()
@@ -866,21 +899,20 @@ local GodModeToggle = PlayerTab:CreateToggle({
                     humanoid.HipHeight = height
                 end
             end
-                    coroutine.wrap(function()
-                while GodMode do
-                    if LPGettingChased() then
-                     local currentRoom = game.Workspace:WaitForChild("CurrentRoom")
-                    if currentRoom.Monsters:FindFirstChild("DandyMonster") or currentRoom.Monsters:FindFirstChild("VeeMonster") or currentRoom.Monsters:FindFirstChild("SproutMonster") or currentRoom.Monsters:FindFirstChild("ShellyMonster") or currentRoom.Monsters:FindFirstChild("PebbleMonster") then
-                     CHH(7)
-                    else
-                                        CHH(5.5)
-                                        end
-                    else
-                        CHH(1.41)
-                    end
-                    task.wait(0.1)
+            
+            local conn
+            conn = game:GetService("RunService").Heartbeat:Connect(function()
+                if not GodMode then 
+                    conn:Disconnect()
+                    return
                 end
-            end)()
+                
+                if LPGettingChased() then
+                    CHH(5.5)
+                else
+                    CHH(1.41)
+                end
+            end)
         else
             local function CHH(height)
                 local player = game.Players.LocalPlayer
@@ -891,6 +923,7 @@ local GodModeToggle = PlayerTab:CreateToggle({
                 end
             end
             CHH(1.41)
+            
             sound(17208361335)
             Poltergeist:Notification({ 
                 Title = "Notification",
@@ -902,78 +935,13 @@ local GodModeToggle = PlayerTab:CreateToggle({
     end
 })
 
+-- Jump Button
 local JumpValue = false
 local JumpBTN = PlayerTab:CreateButton({
     Name = "🦘 Jump button",
     Description = "Creates a bypass jump button (not made by me, created by FoxcatLol on Discord.)",
     Callback = function()
-        if JumpValue == false then
-            JumpValue = true
-            local UIS = game:GetService("UserInputService")
-            local Players = game:GetService("Players")
-
-            local player = Players.LocalPlayer
-            local char = player.Character or player.CharacterAdded:Wait()
-            local humanoidRootPart = char:WaitForChild("HumanoidRootPart")
-            local humanoid = char:WaitForChild("Humanoid")
-
-            local button = Instance.new("TextButton")
-            button.Size = UDim2.new(0, 75, 0, 75)
-            button.Position = UDim2.new(0.5, -50, 0.8, 0)
-            button.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-            button.Text = "Jump"
-            button.TextColor3 = Color3.fromRGB(255, 255, 255)
-            button.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui"):FindFirstChildOfClass("ScreenGui") or Instance.new("ScreenGui", game.Players.LocalPlayer.PlayerGui)
-
-            local dragging, dragInput, dragStart, startPos
-
-            button.InputBegan:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                    dragging = true
-                    dragStart = input.Position
-                    startPos = button.Position
-                    input.Changed:Connect(function()
-                        if input.UserInputState == Enum.UserInputState.End then
-                            dragging = false
-                        end
-                    end)
-                end
-            end)
-
-            button.InputChanged:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-                    dragInput = input
-                end
-            end)
-
-            UIS.InputChanged:Connect(function(input)
-                if input == dragInput and dragging then
-                    local delta = input.Position - dragStart
-                    button.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-                end
-            end)
-
-            local function isOnGround()
-                return humanoid:GetState() == Enum.HumanoidStateType.Seated or 
-                       humanoid:GetState() == Enum.HumanoidStateType.Running or 
-                       humanoid:GetState() == Enum.HumanoidStateType.Landed
-            end
-
-            button.MouseButton1Click:Connect(function()
-                if isOnGround() then
-                    humanoidRootPart.AssemblyLinearVelocity = Vector3.new(0, 75, 0)
-                    task.wait(0.1)
-                end
-            end)
-            
-            sound(8486683243)
-            Poltergeist:Notification({ 
-                Title = "Notification",
-                Icon = "notifications_active",
-                ImageSource = "Material",
-                Content = "Jump button has been activated"
-            })
-        else
+        if JumpValue then
             sound(17208361335)
             Poltergeist:Notification({ 
                 Title = "Notification",
@@ -981,31 +949,129 @@ local JumpBTN = PlayerTab:CreateButton({
                 ImageSource = "Material",
                 Content = "Jump button is already activated"
             })
+            return
         end
+        
+        JumpValue = true
+        local UIS = game:GetService("UserInputService")
+        local Players = game:GetService("Players")
+
+        local player = Players.LocalPlayer
+        local char = player.Character or player.CharacterAdded:Wait()
+        local humanoidRootPart = char:WaitForChild("HumanoidRootPart")
+        local humanoid = char:WaitForChild("Humanoid")
+
+        local button = Instance.new("TextButton")
+        button.Size = UDim2.new(0, 75, 0, 75)
+        button.Position = UDim2.new(0.5, -50, 0.8, 0)
+        button.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        button.Text = "Jump"
+        button.TextColor3 = Color3.fromRGB(255, 255, 255)
+        button.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui"):FindFirstChildOfClass("ScreenGui") or Instance.new("ScreenGui", game.Players.LocalPlayer.PlayerGui)
+
+        local dragging, dragInput, dragStart, startPos
+
+        button.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                dragging = true
+                dragStart = input.Position
+                startPos = button.Position
+                input.Changed:Connect(function()
+                    if input.UserInputState == Enum.UserInputState.End then
+                        dragging = false
+                    end
+                end)
+            end
+        end)
+
+        button.InputChanged:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+                dragInput = input
+            end
+        end)
+
+        UIS.InputChanged:Connect(function(input)
+            if input == dragInput and dragging then
+                local delta = input.Position - dragStart
+                button.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            end
+        end)
+
+        local function isOnGround()
+            return humanoid:GetState() == Enum.HumanoidStateType.Seated or 
+                   humanoid:GetState() == Enum.HumanoidStateType.Running or 
+                   humanoid:GetState() == Enum.HumanoidStateType.Landed
+        end
+
+        button.MouseButton1Click:Connect(function()
+            if isOnGround() then
+                humanoidRootPart.AssemblyLinearVelocity = Vector3.new(0, 75, 0)
+                task.wait(0.1)
+            end
+        end)
+        
+        sound(8486683243)
+        Poltergeist:Notification({ 
+            Title = "Notification",
+            Icon = "notifications_active",
+            ImageSource = "Material",
+            Content = "Jump button has been activated"
+        })
     end
 })
 
--- Create Others tab
-local OthersTab = Window:CreateTab({
-    Name = "Others",
-    Icon = "add_circle",
-    ImageSource = "Material",
-    ShowTitle = true
-})
-
-local GDscript = OthersTab:CreateButton({
-    Name = "G0bbyD0llan script",
-    Description = "Loads G0bbyD0llan's script (Great script!! ,'D)",
-    Callback = function()
-          loadstring(game:HttpGet("https://pastebin.com/raw/FBRnb7S7"))()
+-- Spin
+local Spin = false
+local SpinToggle = PlayerTab:CreateToggle({
+    Name = "🌀 Spin",
+    Description = "Makes you sPiNnNnNnNnNnNnNnNnNnN",
+    CurrentValue = false,
+    Callback = function(v)
+        Spin = v
+        if Spin then
             sound(8486683243)
             Poltergeist:Notification({ 
                 Title = "Notification",
                 Icon = "notifications_active",
                 ImageSource = "Material",
-                Content = "Script loaded!"
+                Content = "Spin has been activated"
             })
+            local Spin = Instance.new("BodyAngularVelocity")
+	Spin.Name = "Spinning"
+	Spin.Parent = player.Character.HumanoidRootPart
+	Spin.MaxTorque = Vector3.new(0, math.huge, 0)
+	Spin.AngularVelocity = Vector3.new(0,50,0)
         
+        else
+            for i,v in pairs(player.Character.HumanoidRootPart:GetChildren()) do
+		if v.Name == "Spinning" then
+			v:Destroy()
+		end
+	end
+            sound(17208361335)
+            Poltergeist:Notification({ 
+                Title = "Notification",
+                Icon = "notifications_active",
+                ImageSource = "Material",
+                Content = "Spin has been deactivated"
+            })
+        end
+    end
+})
+
+-- Other Scripts
+local GDscript = OthersTab:CreateButton({
+    Name = "G0bbyD0llan script",
+    Description = "Loads G0bbyD0llan's script (Great script!! ,'D)",
+    Callback = function()
+        loadstring(game:HttpGet("https://pastebin.com/raw/FBRnb7S7"))()
+        sound(8486683243)
+        Poltergeist:Notification({ 
+            Title = "Notification",
+            Icon = "notifications_active",
+            ImageSource = "Material",
+            Content = "Script loaded!"
+        })
     end
 })
 
@@ -1013,15 +1079,14 @@ local GACscript = OthersTab:CreateButton({
     Name = "Glisten's animation closet",
     Description = "Loads Glisten's animation closet (dw animations XD)",
     Callback = function()
-         loadstring(game:HttpGet("https://raw.githubusercontent.com/RodeStriker/TheDandyHelper/refs/heads/main/GAC"))()
-            sound(8486683243)
-            Poltergeist:Notification({ 
-                Title = "Notification",
-                Icon = "notifications_active",
-                ImageSource = "Material",
-                Content = "Script loaded!"
-            })
-        
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/RodeStriker/TheDandyHelper/refs/heads/main/GAC"))()
+        sound(8486683243)
+        Poltergeist:Notification({ 
+            Title = "Notification",
+            Icon = "notifications_active",
+            ImageSource = "Material",
+            Content = "Script loaded!"
+        })
     end
 })
 
@@ -1030,14 +1095,12 @@ local Nscript = OthersTab:CreateButton({
     Description = "Loads Noxious Hub (Made by Unable :o)",
     Callback = function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/NXSendeavor/endeavor/refs/heads/main/DSWDendeavor"))()
-            sound(8486683243)
-            Poltergeist:Notification({ 
-                Title = "Notification",
-                Icon = "notifications_active",
-                ImageSource = "Material",
-                Content = "Script loaded!"
-            })
-        
+        sound(8486683243)
+        Poltergeist:Notification({ 
+            Title = "Notification",
+            Icon = "notifications_active",
+            ImageSource = "Material",
+            Content = "Script loaded!"
+        })
     end
 })
-
