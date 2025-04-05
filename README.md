@@ -802,6 +802,81 @@ local ntfrmToggle = GeneralTab:CreateToggle({
     end
 })
 
+local ntfri = false
+local ntfriToggle = GeneralTab:CreateToggle({
+    Name = "‼ Notify Rare Items",
+    Description = "Notify you when a rare item appears",
+    CurrentValue = false,
+    Callback = function(v)
+        ntfri = v
+        if ntfri then
+            sound(8486683243)  -- Notification sound when activated
+            Poltergeist:Notification({ 
+                Title = "Notification",
+                Icon = "notifications_active",
+                ImageSource = "Material",
+                Content = "Notify Rare Items has been activated"
+            })
+
+            local notifiedItem = {}
+
+            local function sendNotificationItem(itemName)
+                Poltergeist:Notification({ 
+                    Title = "Rare Item",
+                    Icon = "notifications_active",
+                    ImageSource = "Material",
+                    Content = "A rare item has appeared! Item name: " .. itemName
+                })
+                sound(8486683243)  -- Notification sound when a rare item appears
+            end
+
+            local targetItems = {
+                "Bandage",
+                "HealthKit",
+                "SmokeBomb",
+                "EjectButton",
+                "Valve",
+                "Box chocolates",
+                "AirHorn",
+                "JawBreaker",
+                "JumperCable",
+                "PopBottle"
+            }
+
+            local currentRoom = game.Workspace:FindFirstChild("CurrentRoom")
+            if currentRoom then
+                while ntfri do  -- This checks if the toggle is active
+                    for _, model in ipairs(currentRoom:GetChildren()) do
+                        if model:IsA("Model") then
+                            local itemsFolder = model:FindFirstChild("Items")
+                            if itemsFolder then
+                                for _, item in ipairs(itemsFolder:GetChildren()) do
+                                    if table.find(targetItems, item.Name) and not notifiedItem[item.Name] then
+                                        sendNotificationItem(item.Name)
+                                        notifiedItem[item.Name] = true  -- Mark item as notified
+                                    end
+                                end
+                            end
+                        end
+                    end
+                    task.wait(5)  -- Wait before checking again
+                end
+            else
+                warn("There is no current room in workspace!")
+            end
+        else
+            sound(17208361335)  -- Sound when deactivated
+            Poltergeist:Notification({ 
+                Title = "Notification",
+                Icon = "notifications_active",
+                ImageSource = "Material",
+                Content = "Notify Rare Items has been deactivated"
+            })
+        end
+    end
+})
+
+
 
 -- Player Tab Features
 local tpWalking = false
@@ -1183,6 +1258,36 @@ local Nscript = OthersTab:CreateButton({
     Description = "Loads Noxious Hub (Made by Unable :o)",
     Callback = function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/NXSendeavor/endeavor/refs/heads/main/DSWDendeavor"))()
+        sound(8486683243)
+        Poltergeist:Notification({ 
+            Title = "Notification",
+            Icon = "notifications_active",
+            ImageSource = "Material",
+            Content = "Script loaded!"
+        })
+    end
+})
+
+local IYscript = OthersTab:CreateButton({
+    Name = "Infinite Yield",
+    Description = "Loads Infinite Yield (great universal script)",
+    Callback = function()
+   loadstring(game:HttpGet('https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source'))()
+        sound(8486683243)
+        Poltergeist:Notification({ 
+            Title = "Notification",
+            Icon = "notifications_active",
+            ImageSource = "Material",
+            Content = "Script loaded!"
+        })
+    end
+})
+
+local ikHub = OthersTab:CreateButton({
+    Name = "Iriska Hub",
+    Description = "Dandy's World script made by hex233222 (🐱🐱🐱🐱🐱🐱)",
+    Callback = function()
+loadstring(game:HttpGet("https://rawscripts.net/raw/Dandy's-World-ALPHA-Zyra-Hub-24675"))()
         sound(8486683243)
         Poltergeist:Notification({ 
             Title = "Notification",
