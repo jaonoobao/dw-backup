@@ -715,6 +715,94 @@ local AutoGTEToggle = GeneralTab:CreateToggle({
     end
 })
 
+local ntfrm = false
+local ntfrmToggle = GeneralTab:CreateToggle({
+    Name = "❗ Notify Rare Monsters",
+    Description = "Notify you when a rare monster appears",
+    CurrentValue = false,
+    Callback = function(v)
+        ntfrm = v
+        if ntfrm then
+            sound(8486683243)
+            Poltergeist:Notification({ 
+                Title = "Notification",
+                Icon = "notifications_active",
+                ImageSource = "Material",
+                Content = "Notify Rare Monsters has been activated"
+            })
+
+            local notifiedMonsters = {}
+            
+            local function sendNotification(monsterName)
+                Poltergeist:Notification({ 
+                    Title = "Rare Monster",
+                    Icon = "notifications_active",
+                    ImageSource = "Material",
+                    Content = "A rare monster has appeared! Monster name: " .. monsterName
+                })
+                sound(8486683243)
+            end
+
+            local targetMonsters = {
+                "AstroMonster",
+                "VeeMonster",
+                "SproutMonster",
+                "PebbleMonster",
+                "ShellyMonster",
+                "DandyMonster"
+            }
+
+            local currentRoom = game.Workspace:FindFirstChild("CurrentRoom")
+            if currentRoom then
+                -- Continuously check for monsters
+                while ntfrm do
+                    for _, model in ipairs(currentRoom:GetChildren()) do
+                        if model:IsA("Model") then
+                            local monstersFolder = model:FindFirstChild("Monsters")
+                            if monstersFolder then
+                                -- Check the monsters within Monsters folder
+                                for _, monster in ipairs(monstersFolder:GetChildren()) do
+                                    if table.find(targetMonsters, monster.Name) and not notifiedMonsters[monster.Name] then
+                                        sendNotification(monster.Name) -- Send the notification
+                                        notifiedMonsters[monster.Name] = true -- Mark the monster as notified
+                                    end
+                                end
+                            end
+                        end
+                    end
+                    
+                    -- Clean up monsters that are no longer present
+                    for monsterName, _ in pairs(notifiedMonsters) do
+                        local stillExists = false
+                        for _, model in ipairs(currentRoom:GetChildren()) do
+                            local monstersFolder = model:FindFirstChild("Monsters")
+                            if monstersFolder and monstersFolder:FindFirstChild(monsterName) then
+                                stillExists = true
+                                break
+                            end
+                        end
+                        if not stillExists then
+                            notifiedMonsters[monsterName] = nil -- Remove monsters that are no longer present
+                        end
+                    end
+                    task.wait(5)
+                end
+            else
+                warn("There is no current room in workspace!")
+            end
+        else
+            sound(17208361335)
+            Poltergeist:Notification({ 
+                Title = "Notification",
+                Icon = "notifications_active",
+                ImageSource = "Material",
+                Content = "Notify Rare Monsters has been deactivated"
+            })
+        end
+    end
+})
+
+
 -- Player Tab Features
 local tpWalking = false
 local localPlayer = game:GetService("Players").LocalPlayer
