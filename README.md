@@ -957,64 +957,98 @@ localPlayer.CharacterAdded:Connect(function()
     end
 end)
 
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+
 local Noclip = false
+local noclipConnection
+
+-- Função para validar se uma part pode ser considerada "chão"
+local function isValidGround(part, result, originY)
+	if not part then return false end
+
+	local normal = result.Normal
+	if math.abs(normal.Y) < 0.9 then
+		return false -- inclinado demais
+	end
+
+	local hitY = result.Position.Y
+	if (originY - hitY) > 12 then
+		return false -- muito distante abaixo do jogador
+	end
+
+	return true
+end
+
 local NoclipToggle = PlayerTab:CreateToggle({
-    Name = "👻 Noclip",
-    Description = "turns you into a POLTERGEIST bOooOooOoo",
-    CurrentValue = false,
-    Callback = function(v)
-        Noclip = v
-        if Noclip then
-            sound(8486683243)
-            Poltergeist:Notification({ 
-                Title = "Notification",
-                Icon = "notifications_active",
-                ImageSource = "Material",
-                Content = "Noclip has been activated"
-            })
-            local player = game.Players.LocalPlayer
-            local character = player.Character or player.CharacterAdded:Wait()
-            local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+	Name = "👻 Noclip",
+	Description = "turns you into a POLTERGEIST bOooOooOoo",
+	CurrentValue = false,
+	Callback = function(v)
+		Noclip = v
 
-            local function onTouched(part)
-                if part:IsA("BasePart") and part.CanCollide then
-                    if part:IsDescendantOf(character) then
-                        return
-                    end
+		local player = Players.LocalPlayer
+		local character = player.Character or player.CharacterAdded:Wait()
+		local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 
-                    local playerPosition = humanoidRootPart.Position
-                    local partPosition = part.Position
+		if Noclip then
+			sound(8486683243)
+			Poltergeist:Notification({ 
+				Title = "Notification",
+				Icon = "notifications_active",
+				ImageSource = "Material",
+				Content = "Noclip has been activated"
+			})
 
-                    if partPosition.Y < playerPosition.Y - humanoidRootPart.Size.Y / 2 then
-                        return
-                    end
-                    if Noclip == true then
-                        local noclipBool = Instance.new("BoolValue")
-                        noclipBool.Name = "NoclipBool"
-                        noclipBool.Parent = part
-                        part.CanCollide = false
-                    end
-                end
-            end
-            humanoidRootPart.Touched:Connect(onTouched)
-        else
-            sound(17208361335)
-            Poltergeist:Notification({ 
-                Title = "Notification",
-                Icon = "notifications_active",
-                ImageSource = "Material",
-                Content = "Noclip has been deactivated"
-            })
-            for i, v in ipairs(workspace:GetDescendants()) do
-                if v.Name == "NoclipBool" then
-                    v.Parent.CanCollide = true
-                    Noclip = false
-                    v:Destroy() 
-                end
-            end
-        end
-    end
+			noclipConnection = RunService.Stepped:Connect(function()
+				if not character or not character.Parent then return end
+				local origin = humanoidRootPart.Position
+				local direction = Vector3.new(0, -12, 0)
+
+				local params = RaycastParams.new()
+				params.FilterDescendantsInstances = {character}
+				params.FilterType = Enum.RaycastFilterType.Exclude
+
+				local result = Workspace:Raycast(origin, direction, params)
+				local originY = origin.Y
+
+				local groundedPart = (result and isValidGround(result.Instance, result, originY)) and result.Instance or nil
+
+				for _, part in ipairs(Workspace:GetPartBoundsInBox(humanoidRootPart.CFrame, Vector3.new(20, 20, 20))) do
+					if part:IsA("BasePart") and not part:IsDescendantOf(character) then
+						if groundedPart and part == groundedPart then
+							part.CanCollide = true
+						else
+							part.CanCollide = false
+						end
+					end
+				end
+			end)
+
+		else
+			sound(17208361335)
+			Poltergeist:Notification({ 
+				Title = "Notification",
+				Icon = "notifications_active",
+				ImageSource = "Material",
+				Content = "Noclip has been deactivated"
+			})
+
+			for _, part in ipairs(Workspace:GetDescendants()) do
+				if part:IsA("BasePart") then
+					part.CanCollide = true
+				end
+			end
+
+			if noclipConnection then
+				noclipConnection:Disconnect()
+				noclipConnection = nil
+			end
+		end
+	end
 })
+
 
 -- God Mode
 local GodMode = false
