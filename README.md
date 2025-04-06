@@ -1,4 +1,5 @@
 -- Dandy's World
+local TpWalkSpeed = 0.5
 local Poltergeist = loadstring(game:HttpGet("https://raw.githubusercontent.com/berhddb/Library/refs/heads/main/Main", true))()
 local VirtualInputManager = game:GetService('VirtualInputManager')
 local player = game.Players.LocalPlayer
@@ -897,7 +898,7 @@ local function StartTeleportWalk(speedMultiplier)
         
         local delta = game:GetService("RunService").Heartbeat:Wait()
         if humanoid.MoveDirection.Magnitude > 0 then
-            character:TranslateBy(humanoid.MoveDirection * speedMultiplier * delta * 10)
+            character:TranslateBy(humanoid.MoveDirection * TpWalkSpeed * delta * 10)
         end
     end)
 end
@@ -913,9 +914,10 @@ local TpWalkSpeedSlider = PlayerTab:CreateSlider({
     Increment = 0.1,
     CurrentValue = 0.5,
     Callback = function(Value)
+    TpWalkSpeed = Value
         if TpWalkToggle and TpWalkToggle.CurrentValue then
             StopTeleportWalk()
-            StartTeleportWalk(Value)
+            StartTeleportWalk(TpWalkSpeed)
         end
     end
 })
@@ -933,7 +935,7 @@ local TpWalkToggle = PlayerTab:CreateToggle({
                 ImageSource = "Material",
                 Content = "Teleport Walk activated"
             })
-            StartTeleportWalk(TpWalkSpeedSlider.CurrentValue)
+            StartTeleportWalk(TpWalkSpeed)
         else
             sound(17208361335)
             Poltergeist:Notification({
@@ -951,7 +953,7 @@ localPlayer.CharacterAdded:Connect(function()
     if TpWalkToggle and TpWalkToggle.CurrentValue then
         StopTeleportWalk()
         task.wait(0.5)
-        StartTeleportWalk(TpWalkSpeedSlider.CurrentValue)
+        StartTeleportWalk(TpWalkSpeed)
     end
 end)
 
@@ -1018,7 +1020,7 @@ local NoclipToggle = PlayerTab:CreateToggle({
 local GodMode = false
 local GodModeToggle = PlayerTab:CreateToggle({
     Name = "🌌 God Mode",
-    Description = "Makes you immune to twisteds (thx G0byD0llan for the inspiration to make this function)",
+    Description = "Makes you immune to twisteds (not all the twisteds)",
     CurrentValue = false,
     Callback = function(v)
         GodMode = v
@@ -1182,7 +1184,6 @@ local JumpBTN = PlayerTab:CreateButton({
         })
     end
 })
-
 -- Spin
 local Spin = false
 local SpinToggle = PlayerTab:CreateToggle({
@@ -1219,6 +1220,28 @@ local SpinToggle = PlayerTab:CreateToggle({
                 Content = "Spin has been deactivated"
             })
         end
+    end
+})
+
+local FOV = PlayerTab:CreateSlider({
+    Name = "Field of View",
+    Description = "Adjust your fov",
+    Range = {10, 120},
+    Increment = 1,
+    CurrentValue = 70,
+    Callback = function(Value)
+       workspace.Camera.FieldOfView = Value
+    end
+})
+
+local MZD = PlayerTab:CreateSlider({
+    Name = "Max zoom distance",
+    Description = "Adjust your max zoom distance",
+    Range = {3, 100},
+    Increment = 1,
+    CurrentValue = 50,
+    Callback = function(Value)
+     player.CameraMaxZoomDistance = Value
     end
 })
 
