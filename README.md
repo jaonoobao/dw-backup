@@ -803,6 +803,98 @@ local ntfrmToggle = GeneralTab:CreateToggle({
     end
 })
 
+local GTG = false
+local GTGToggle = GeneralTab:CreateButton({
+    Name = "Go to a generator",
+    Description = "Makes you go to a imcomplete generator.",
+    Callback = function()
+        if GTG then
+            sound(17208361335)
+            Poltergeist:Notification({ 
+                Title = "Notification",
+                Icon = "notifications_active",
+                ImageSource = "Material",
+                Content = "You are already going to a generator!"
+            })
+            return
+        end
+        
+        GTG = true
+     local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+
+local cr = workspace:FindFirstChild("CurrentRoom")
+
+if cr then
+	local room = cr:FindFirstChildWhichIsA("Model")
+	if room then
+		local GeneratorsFolder = room:FindFirstChild("Generators")
+		local Generators = GeneratorsFolder and GeneratorsFolder:GetChildren() or {}
+
+		-- Filtrando os geradores incompletos
+		for i = #Generators, 1, -1 do
+			local generator = Generators[i]
+			local stats = generator:FindFirstChild("Stats")
+			if stats then
+				local completed = stats:FindFirstChild("Completed")
+				if completed and completed.Value == true then
+					table.remove(Generators, i)
+				end
+			end
+		end
+
+		local amountGeneratorsFolder = #Generators
+		print("Geradores ainda não completados:", amountGeneratorsFolder)
+
+		-- Se houver pelo menos um gerador válido
+		if amountGeneratorsFolder > 0 then
+			local firstGenerator = Generators[1]
+			local promptPart = firstGenerator:FindFirstChild("Prompt")
+
+			if promptPart then
+				-- Tween até o prompt
+				local tweenInfo = TweenInfo.new(
+					7, -- duração
+					Enum.EasingStyle.Linear
+				)
+
+				local goal = {
+					CFrame = promptPart.CFrame + Vector3.new(0, 0, -2) -- um pouco à frente da peça
+				}
+
+				local tween = TweenService:Create(humanoidRootPart, tweenInfo, goal)
+				tween:Play()
+
+				-- Espera o tween acabar antes de simular o input
+				tween.Completed:Connect(function()
+					wait(0.3) -- pequeno delay só pra garantir que está parado
+
+					-- Simula pressionar "E"
+					VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+					wait(0.1)
+					VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+  GTG = false
+					print("Pressionou E no prompt do gerador.")
+				end)
+			end
+		end
+	end
+end
+        sound(8486683243)
+        Poltergeist:Notification({ 
+            Title = "Notification",
+            Icon = "notifications_active",
+            ImageSource = "Material",
+            Content = "Going to a generator..."
+        })
+    end
+})
+
 local ntfri = false
 local ntfriToggle = GeneralTab:CreateToggle({
     Name = "‼ Notify Rare Items",
