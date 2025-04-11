@@ -1415,13 +1415,14 @@ local MZD = PlayerTab:CreateSlider({
 OthersTab:CreateSection("Config")
 
 OthersTab:CreateSection("Generator ESP")
-GeneratorESPColorPicker = OthersTab:CreateColorPicker({
+local GeneratorEspColor = OthersTab:CreateColorPicker({
     Name = "Generator ESP color",
     Color = Color3.fromRGB(0, 255, 0),
+    Flag = "generatorespcolor",
     Callback = function(Value)
-        print(Value)
+    print(Value)
     end
-})
+}, "GeneratorEspColor")
 
 OthersTab:CreateSection("Other Hubs")
 
