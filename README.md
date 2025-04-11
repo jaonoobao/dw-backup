@@ -1422,7 +1422,7 @@ local GeneratorEspColor = OthersTab:CreateColorPicker({
     Callback = function(Value)
     print(Value)
     end
-}, "GeneratorEspColor")
+})
 
 OthersTab:CreateSection("Other Hubs")
 
