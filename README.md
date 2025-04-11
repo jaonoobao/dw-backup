@@ -1424,6 +1424,9 @@ local GeneratorEspColor = OthersTab:CreateColorPicker({
     Flag = "generatorespcolor",
     Callback = function(Value)
     GeneratorEspColor = Value
+    GeneratorESPToggle = false
+    task.wait(0.1)
+    GeneratorESPToggle = true
     end
 }, "generatorespcolor")
 
@@ -1443,6 +1446,9 @@ local ShowAmountToggle = OthersTab:CreateToggle({
                 Content = "Now the ESP shows the amount."
             })
           ShowGeneratorAmount = true
+	    GeneratorESPToggle = false
+    task.wait(0.1)
+    GeneratorESPToggle = true
         else
            
             sound(17208361335)
