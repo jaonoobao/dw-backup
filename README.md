@@ -1,4 +1,4 @@
-print("Loading")
+print("Loading Poltergeist Hub (Dandy's World)")
 -- Dandy's World
 local TpWalkSpeed = 0.5
 local ttg = false
@@ -1423,7 +1423,7 @@ local GeneratorEspColor = OthersTab:CreateColorPicker({
     Callback = function(Value)
     print(Value)
     end
-})
+}, "generatorespcolor")
 
 OthersTab:CreateSection("Other Hubs")
 
