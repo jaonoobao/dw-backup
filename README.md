@@ -6,6 +6,11 @@ local Poltergeist = loadstring(game:HttpGet("https://raw.githubusercontent.com/b
 local VirtualInputManager = game:GetService('VirtualInputManager')
 local player = game.Players.LocalPlayer
 
+-- Configuration
+-- generator esp
+local GeneratorEspColor = 0,255,0
+local ShowGeneratorDistance = false
+
 -- Sound function
 local function sound(id)
     local sound = Instance.new("Sound")
@@ -101,9 +106,10 @@ local function updateDistanceESP(object, name)
     
     local localHead = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Head")
     if not localHead then return end
-    
+    if ShowGeneratorDistance then
     local dist = (localHead.Position - root.Position).Magnitude
     object[name.."ESP"].TextLabel.Text = string.format("%s [%.1fm]", name, dist)
+    end
 end
 
 -- Generator ESP System
@@ -117,7 +123,7 @@ local function UpdateGeneratorESP()
                 local stats = obj:FindFirstChild("Stats")
                 if stats and stats:FindFirstChild("Completed") then
                     if not stats.Completed.Value and not generatorCache[obj] then
-                        createESP(obj, "Generator", Color3.fromRGB(0, 255, 0))
+                        createESP(obj, "Generator", Color3.fromRGB(GeneratorEspColor))
                         generatorCache[obj] = true
                     elseif stats.Completed.Value and generatorCache[obj] then
                         if obj:FindFirstChild("GeneratorHighlight") then obj.GeneratorHighlight:Destroy() end
@@ -1417,13 +1423,50 @@ OthersTab:CreateSection("Config")
 
 OthersTab:CreateSection("Generator ESP")
 local GeneratorEspColor = OthersTab:CreateColorPicker({
-    Name = "Generator ESP color",
+    Name = "🖋 Generator ESP color",
     Color = Color3.fromRGB(0, 255, 0),
     Flag = "generatorespcolor",
     Callback = function(Value)
-    print(Value)
+    GeneratorEspColor = Value
     end
 }, "generatorespcolor")
+
+local ShowDistance = false
+local ShowDistanceToggle = OthersTab:CreateToggle({
+    Name = "📍 Show Distance",
+    Description = "Shows the distance of the generator",
+    CurrentValue = false,
+    Callback = function(v)
+        ShowDistance = v
+        if ShowDistance then
+            sound(8486683243)
+            Poltergeist:Notification({ 
+                Title = "Notification",
+                Icon = "notifications_active",
+                ImageSource = "Material",
+                Content = "Now the ESP shows the distance."
+            })
+          ShowGeneratorDistance = true
+	   if generatorCache[obj] then
+                        updateDistanceESP(obj, "Generator")
+                    end
+        else
+           
+            sound(17208361335)
+            Poltergeist:Notification({ 
+                Title = "Notification",
+                Icon = "notifications_active",
+                ImageSource = "Material",
+                Content = "Now the ESP hide the distance."
+		
+            })
+	    ShowGeneratorDistance = false
+      if generatorCache[obj] then
+                        updateDistanceESP(obj, "Generator")
+                    end
+        end
+    end
+})
 
 OthersTab:CreateSection("Other Hubs")
 
