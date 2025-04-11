@@ -9,7 +9,6 @@ local player = game.Players.LocalPlayer
 -- Configuration
 -- Generator esp
 local GeneratorEspColor = 0,255,0
-local ShowGeneratorDistance = false
 local ShowGeneratorAmount = false
 
 -- Sound function
@@ -107,12 +106,11 @@ local function updateDistanceESP(object, name)
     
     local localHead = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Head")
     if not localHead then return end
-    if ShowGeneratorDistance then
-    local dist = (localHead.Position - root.Position).Magnitude
-    object[name.."ESP"].TextLabel.Text = string.format("%s [%.1fm]", name, dist)
-    end
     if ShowGeneratorAmount then
     local Amount = object.Stats.CurrentAmount
+       object[name.."ESP"].TextLabel.Text = string.format("%s [%.1fm]", name, Amount)
+       else
+        object[name.."ESP"].TextLabel.Text = ""
     end
 end
 
@@ -1434,39 +1432,6 @@ local GeneratorEspColor = OthersTab:CreateColorPicker({
     GeneratorEspColor = Value
     end
 }, "generatorespcolor")
-
-local ShowDistance = false
-local ShowDistanceToggle = OthersTab:CreateToggle({
-    Name = "📍 Show Distance",
-    Description = "Shows the distance of the generator",
-    CurrentValue = false,
-    Callback = function(v)
-        ShowDistance = v
-        if ShowDistance then
-            sound(8486683243)
-            Poltergeist:Notification({ 
-                Title = "Notification",
-                Icon = "notifications_active",
-                ImageSource = "Material",
-                Content = "Now the ESP shows the distance."
-            })
-          ShowGeneratorDistance = true
-	       print(ShowGeneratorDistance)
-        else
-           
-            sound(17208361335)
-            Poltergeist:Notification({ 
-                Title = "Notification",
-                Icon = "notifications_active",
-                ImageSource = "Material",
-                Content = "Now the ESP hide the distance."
-		
-            })
-	    ShowGeneratorDistance = false
-     print(ShowGeneratorDistance)
-        end
-    end
-})
 
 local ShowAmount = false
 local ShowAmountToggle = OthersTab:CreateToggle({
