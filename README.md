@@ -7,9 +7,10 @@ local VirtualInputManager = game:GetService('VirtualInputManager')
 local player = game.Players.LocalPlayer
 
 -- Configuration
--- generator esp
+-- Generator esp
 local GeneratorEspColor = 0,255,0
 local ShowGeneratorDistance = false
+local ShowGeneratorAmount = false
 
 -- Sound function
 local function sound(id)
@@ -109,6 +110,9 @@ local function updateDistanceESP(object, name)
     if ShowGeneratorDistance then
     local dist = (localHead.Position - root.Position).Magnitude
     object[name.."ESP"].TextLabel.Text = string.format("%s [%.1fm]", name, dist)
+    end
+    if ShowGeneratorAmount then
+    local Amount = object.Stats.CurrentAmount
     end
 end
 
@@ -1447,9 +1451,7 @@ local ShowDistanceToggle = OthersTab:CreateToggle({
                 Content = "Now the ESP shows the distance."
             })
           ShowGeneratorDistance = true
-	   if generatorCache[obj] then
-                        updateDistanceESP(obj, "Generator")
-                    end
+	       print(ShowGeneratorDistance)
         else
            
             sound(17208361335)
@@ -1461,9 +1463,38 @@ local ShowDistanceToggle = OthersTab:CreateToggle({
 		
             })
 	    ShowGeneratorDistance = false
-      if generatorCache[obj] then
-                        updateDistanceESP(obj, "Generator")
-                    end
+     print(ShowGeneratorDistance)
+        end
+    end
+})
+
+local ShowAmount = false
+local ShowAmountToggle = OthersTab:CreateToggle({
+    Name = "📉 Show generator amount",
+    Description = "Shows the amount of the generator",
+    CurrentValue = false,
+    Callback = function(v)
+        ShowDistance = v
+        if ShowDistance then
+            sound(8486683243)
+            Poltergeist:Notification({ 
+                Title = "Notification",
+                Icon = "notifications_active",
+                ImageSource = "Material",
+                Content = "Now the ESP shows the amount."
+            })
+          ShowGeneratorAmount = true
+        else
+           
+            sound(17208361335)
+            Poltergeist:Notification({ 
+                Title = "Notification",
+                Icon = "notifications_active",
+                ImageSource = "Material",
+                Content = "Now the ESP hide the amount."
+		
+            })
+	    ShowGeneratorAmount = false
         end
     end
 })
