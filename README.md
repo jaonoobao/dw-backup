@@ -1,5 +1,6 @@
 -- Dandy's World
 local TpWalkSpeed = 0.5
+local ttg = false
 local Poltergeist = loadstring(game:HttpGet("https://raw.githubusercontent.com/berhddb/Library/refs/heads/main/Main", true))()
 local VirtualInputManager = game:GetService('VirtualInputManager')
 local player = game.Players.LocalPlayer
@@ -340,7 +341,6 @@ local function UpdatePlayerEsp()
                 playerCache[player] = true
             end)
         end
-        
         if playerCache[player] and player.Character then
             updateDistanceESP(player.Character, player.Name)
         end
@@ -360,7 +360,6 @@ local function CleanUpPlayerEsp()
     end
     playerCache = {}
 end
-
 local PlayerEspToggle = VisualTab:CreateToggle({
     Name = "👤 Player ESP",
     Description = "Highlights alive players",
@@ -374,8 +373,7 @@ local PlayerEspToggle = VisualTab:CreateToggle({
                 Icon = "notifications_active",
                 ImageSource = "Material",
                 Content = "Player ESP has been activated"
-            })
-            
+            }) 
             local conn
             conn = game:GetService("RunService").Heartbeat:Connect(function()
                 if not PlayerEsp then 
@@ -396,7 +394,6 @@ local PlayerEspToggle = VisualTab:CreateToggle({
         end
     end
 })
-
 -- No Vee Pop-ups
 local NVPU = false
 local NoVeePopUps = VisualTab:CreateButton({
@@ -412,8 +409,7 @@ local NoVeePopUps = VisualTab:CreateButton({
                 Content = "No Vee pop-ups is already activated"
             })
             return
-        end
-        
+        end  
         NVPU = true
         if game.Players.LocalPlayer.PlayerGui:FindFirstChild("ScreenGui") then
             if game.Players.LocalPlayer.PlayerGui.ScreenGui:FindFirstChild("PopUp") then
@@ -429,7 +425,6 @@ local NoVeePopUps = VisualTab:CreateButton({
         })
     end
 })
-
 -- Auto Skill Check System
 local ASCValue = false
 local AutoSkillCheckBtn = GeneralTab:CreateButton({
@@ -466,86 +461,94 @@ local AutoSkillCheckBtn = GeneralTab:CreateButton({
     end
 })
 
-local function AutoSkillCheck()
-    local screenGui = player.PlayerGui:FindFirstChild("ScreenGui")
-    if not screenGui then return end
+local ASC2 = GeneralTab:CreateToggle({
+    Name = "🏓 Auto Skill Check 2",
+    Description = "Automatically completes skill check",
+    Value = false,
+    Callback = function(state)
+        local runService = game:GetService("RunService")
+        local virtualInputManager = game:GetService("VirtualInputManager")
+        local player = game.Players.LocalPlayer
+        local ScreenGui = player:WaitForChild("PlayerGui"):FindFirstChild("ScreenGui")
+        -- Declarar conexión fuera de la función
+        if not _G.connection then _G.connection = nil end
 
-    local menu = screenGui:FindFirstChild("Menu")
-    if not menu then return end
+        -- Verificación inicial
+        if not ScreenGui then
+            warn("ScreenGui not found.")
+            return
+        end
 
-    local skillCheckFrame = menu:FindFirstChild("SkillCheckFrame")
-    if not skillCheckFrame then return end
+        local menu = ScreenGui:FindFirstChild("Menu")
+        local skillCheckFrame = menu and menu:FindFirstChild("SkillCheckFrame")
+        local marker = skillCheckFrame and skillCheckFrame:FindFirstChild("Marker")
+        local goldArea = skillCheckFrame and skillCheckFrame:FindFirstChild("GoldArea")
+        local calibrateButton = menu and menu:FindFirstChild("Calibrate")
 
-    -- Constants
-    local TOLERANCE = 5 -- Adjust this value as needed
+        if not (marker and goldArea and calibrateButton) then
+            warn("Required elements not found.")
+            return
+        end
 
-    -- Function to perform the check when skill check frame is visible
-    local function onVisibilityChanged()
-        if skillCheckFrame.Visible then
-            local marker = skillCheckFrame:FindFirstChild("Marker")
-            local goldArea = skillCheckFrame:FindFirstChild("GoldArea")
+        local timeElapsed = 0
+        local checkInterval = 0.01
 
-            if marker and goldArea then
-                local markerPosition = marker.AbsolutePosition
-                local goldAreaPosition = goldArea.AbsolutePosition
-                local goldAreaSize = goldArea.AbsoluteSize
-
-                -- Check if the Marker is within the bounds of the GoldArea
-                if markerPosition.X >= goldAreaPosition.X and 
-                   markerPosition.X <= (goldAreaPosition.X + goldAreaSize.X) + TOLERANCE then
-                    -- Send spacebar press event
-                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
-                    task.wait(0.1)
-                    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
-                end
+        -- Función para presionar la tecla espacio
+        local function pressSpace()
+            if skillCheckFrame.Visible then
+                virtualInputManager:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
+                virtualInputManager:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
             end
         end
-    end
 
-    -- Connect to the VisibilityChanged event
-    skillCheckFrame:GetPropertyChangedSignal("Visible"):Connect(onVisibilityChanged)
+        -- Función para comprobar la posición de los frames
+        local function checkFramesPosition()
+            local frame1X = marker.AbsolutePosition.X
+            local frame2X = goldArea.AbsolutePosition.X
+            local minRange = frame2X
+            local maxRange = frame2X + 10
 
-    -- Detect changes in Marker and GoldArea positions
-    local marker = skillCheckFrame:FindFirstChild("Marker")
-    local goldArea = skillCheckFrame:FindFirstChild("GoldArea")
+            if frame1X >= minRange and frame1X <= maxRange then
+                pressSpace()
+            end
+        end
+        -- Si el toggle está activado
+        if state then
+             sound(8486683243)
+        Poltergeist:Notification({ 
+            Title = "Notification",
+            Icon = "notifications_active",
+            ImageSource = "Material",
+            Content = "Auto Skill Check has been activated"
+        })
+            -- Asegurarse de que no haya conexiones previas
+            if _G.connection then
+                _G.connection:Disconnect()
+                _G.connection = nil
+            end
 
-    if marker then
-        marker:GetPropertyChangedSignal("AbsolutePosition"):Connect(onVisibilityChanged)
-    end
-
-    if goldArea then
-        goldArea:GetPropertyChangedSignal("AbsolutePosition"):Connect(onVisibilityChanged)
-        goldArea:GetPropertyChangedSignal("AbsoluteSize"):Connect(onVisibilityChanged)
-    end
-end
-
--- Auto skill check 2 Feature
-local SC2A = false
-local SC2 = GeneralTab:CreateButton({
-    Name = "🏓 Auto Skill Check 2",
-    Description = "Automatically completes skill checks",
-    Callback = function()
-        if SC2A then
+            -- Inicia la verificación del marcador
+            _G.connection = runService.RenderStepped:Connect(function(deltaTime)
+                timeElapsed = timeElapsed + deltaTime
+                if timeElapsed >= checkInterval then
+                    timeElapsed = 0
+                    checkFramesPosition()
+                end
+            end)
+        else
             sound(17208361335)
             Poltergeist:Notification({ 
                 Title = "Notification",
                 Icon = "notifications_active",
                 ImageSource = "Material",
-                Content = "Auto Skill Check is already activated"
+                Content = "Auto Skill Check deactivated."
             })
-            return
+            if _G.connection then
+                _G.connection:Disconnect()
+                _G.connection = nil
+            end
         end
-        
-        SC2A = true
-        AutoSkillCheck()
-        sound(8486683243)
-        Poltergeist:Notification({ 
-            Title = "Notification",
-            Icon = "notifications_active",
-            ImageSource = "Material",
-            Content = "Auto Skill Check has been activated."
-        })
-    end
+    end,
 })
 
 -- Fullbright Feature
@@ -803,98 +806,6 @@ local ntfrmToggle = GeneralTab:CreateToggle({
     end
 })
 
-local GTG = false
-local GTGToggle = GeneralTab:CreateButton({
-    Name = "Go to a generator",
-    Description = "Makes you go to a imcomplete generator.",
-    Callback = function()
-        if GTG then
-            sound(17208361335)
-            Poltergeist:Notification({ 
-                Title = "Notification",
-                Icon = "notifications_active",
-                ImageSource = "Material",
-                Content = "You are already going to a generator!"
-            })
-            return
-        end
-        
-        GTG = true
-     local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
-local VirtualInputManager = game:GetService("VirtualInputManager")
-
-local player = Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
-
-local cr = workspace:FindFirstChild("CurrentRoom")
-
-if cr then
-	local room = cr:FindFirstChildWhichIsA("Model")
-	if room then
-		local GeneratorsFolder = room:FindFirstChild("Generators")
-		local Generators = GeneratorsFolder and GeneratorsFolder:GetChildren() or {}
-
-		-- Filtrando os geradores incompletos
-		for i = #Generators, 1, -1 do
-			local generator = Generators[i]
-			local stats = generator:FindFirstChild("Stats")
-			if stats then
-				local completed = stats:FindFirstChild("Completed")
-				if completed and completed.Value == true then
-					table.remove(Generators, i)
-				end
-			end
-		end
-
-		local amountGeneratorsFolder = #Generators
-		print("Geradores ainda não completados:", amountGeneratorsFolder)
-
-		-- Se houver pelo menos um gerador válido
-		if amountGeneratorsFolder > 0 then
-			local firstGenerator = Generators[1]
-			local promptPart = firstGenerator:FindFirstChild("Prompt")
-
-			if promptPart then
-				-- Tween até o prompt
-				local tweenInfo = TweenInfo.new(
-					7, -- duração
-					Enum.EasingStyle.Linear
-				)
-
-				local goal = {
-					CFrame = promptPart.CFrame + Vector3.new(0, 0, -2) -- um pouco à frente da peça
-				}
-
-				local tween = TweenService:Create(humanoidRootPart, tweenInfo, goal)
-				tween:Play()
-
-				-- Espera o tween acabar antes de simular o input
-				tween.Completed:Connect(function()
-					wait(0.3) -- pequeno delay só pra garantir que está parado
-
-					-- Simula pressionar "E"
-					VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game)
-					wait(0.1)
-					VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
-  GTG = false
-					print("Pressionou E no prompt do gerador.")
-				end)
-			end
-		end
-	end
-end
-        sound(8486683243)
-        Poltergeist:Notification({ 
-            Title = "Notification",
-            Icon = "notifications_active",
-            ImageSource = "Material",
-            Content = "Going to a generator..."
-        })
-    end
-})
-
 local ntfri = false
 local ntfriToggle = GeneralTab:CreateToggle({
     Name = "‼ Notify Rare Items",
@@ -910,9 +821,7 @@ local ntfriToggle = GeneralTab:CreateToggle({
                 ImageSource = "Material",
                 Content = "Notify Rare Items has been activated"
             })
-
             local notifiedItem = {}
-
             local function sendNotificationItem(itemName)
                 Poltergeist:Notification({ 
                     Title = "Rare Item",
@@ -922,7 +831,6 @@ local ntfriToggle = GeneralTab:CreateToggle({
                 })
                 sound(8486683243)  -- Notification sound when a rare item appears
             end
-
             local targetItems = {
                 "Bandage",
                 "HealthKit",
@@ -935,7 +843,6 @@ local ntfriToggle = GeneralTab:CreateToggle({
                 "JumperCable",
                 "PopBottle"
             }
-
             local currentRoom = game.Workspace:FindFirstChild("CurrentRoom")
             if currentRoom then
                 while ntfri do  -- This checks if the toggle is active
@@ -969,51 +876,184 @@ local ntfriToggle = GeneralTab:CreateToggle({
     end
 })
 
+  local function GettingChased()
+                local currentRoom = game.Workspace:FindFirstChild("CurrentRoom")
+                if not currentRoom then return false end
+
+                for _, child in ipairs(currentRoom:GetChildren()) do
+                    if child:IsA("Model") then
+                        local monstersContainer = child:FindFirstChild("Monsters")
+                        if monstersContainer then
+                            for _, monster in ipairs(monstersContainer:GetChildren()) do
+                                local chasingValue = monster:FindFirstChild("ChasingValue")
+                                if chasingValue and chasingValue:IsA("ObjectValue") then
+                                    local player = game.Players.LocalPlayer
+                                    if chasingValue.Value == player or chasingValue.Value == player.Character then
+                                        return true
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+                return false
+            end
+
+
+
+
+local GTGToggle = GeneralTab:CreateButton({
+    Name = "⚙️ Go to a generator",
+    Description = "Makes you go to the nearest incomplete generator. (You can use noclip for better results. Don't use that on the elevator.)",
+    Callback = function()
+        if TTG then
+            sound(17208361335)
+            Poltergeist:Notification({ 
+                Title = "Notification",
+                Icon = "notifications_active",
+                ImageSource = "Material",
+                Content = "You are already going to a generator!"
+            })
+            return
+        end
+        TTG = true
+        local Players = game:GetService("Players")
+        local TweenService = game:GetService("TweenService")
+        local VirtualInputManager = game:GetService("VirtualInputManager")
+        local player = Players.LocalPlayer
+        local character = player.Character or player.CharacterAdded:Wait()
+        local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+        local cr = workspace:FindFirstChild("CurrentRoom")
+        if cr then
+            local room = cr:FindFirstChildWhichIsA("Model")
+            if room then
+                local GeneratorsFolder = room:FindFirstChild("Generators")
+                local Generators = GeneratorsFolder and GeneratorsFolder:GetChildren() or {}
+                -- Filtra apenas os geradores incompletos
+                local incompleteGenerators = {}
+                for _, generator in ipairs(Generators) do
+                    local stats = generator:FindFirstChild("Stats")
+                    if stats then
+                        local completed = stats:FindFirstChild("Completed")
+                        if completed and not completed.Value then
+                            table.insert(incompleteGenerators, generator)
+                        end
+                    end
+                end
+                local closestGenerator, shortestDistance
+                -- Encontra o gerador mais próximo
+                for _, generator in ipairs(incompleteGenerators) do
+                    local prompt = generator:FindFirstChild("Prompt")
+                    if prompt then
+                        local distance = (humanoidRootPart.Position - prompt.Position).Magnitude
+                        if not shortestDistance or distance < shortestDistance then
+                            shortestDistance = distance
+                            closestGenerator = generator
+                        end
+                    end
+                end
+                if closestGenerator then
+                    local promptPart = closestGenerator:FindFirstChild("Prompt")
+                    if promptPart then
+                        local distance = (humanoidRootPart.Position - promptPart.Position).Magnitude
+                        local duration = distance * 0.05 -- Quanto maior a distância, mais devagar
+                        print("Nearest generator distance:", math.floor(distance), " | Duration:", string.format("%.2f", duration))
+                        local tweenInfo = TweenInfo.new(
+                            duration,
+                            Enum.EasingStyle.Linear
+                        )
+                        local goal = {
+                            CFrame = promptPart.CFrame + Vector3.new(0, 0, -2)
+                        }
+                        local tween = TweenService:Create(humanoidRootPart, tweenInfo, goal)
+                        tween:Play()
+                        tween.Completed:Connect(function()
+			if not GettingChased() then
+                            task.wait(0.3)
+                            VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+                            task.wait(0.1)
+                            VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+			    end
+       TTG = false
+                        end)
+                    end
+                else
+                    GTG = false
+                    Poltergeist:Notification({
+                        Title = "Notification",
+                        Icon = "info",
+                        ImageSource = "Material",
+                        Content = "No incomplete generators found!"
+                    })
+                end
+            end
+        end
+        sound(8486683243)
+        Poltergeist:Notification({ 
+            Title = "Notification",
+            Icon = "notifications_active",
+            ImageSource = "Material",
+            Content = "Going to the generator..."
+        })
+    end
+})
+
 
 
 -- Player Tab Features
 local tpWalking = false
 local localPlayer = game:GetService("Players").LocalPlayer
+local RunService = game:GetService("RunService")
 
-local function StartTeleportWalk(speedMultiplier)
+local function StartTeleportWalk()
     tpWalking = true
-    
+
     local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
     local humanoid = character:WaitForChild("Humanoid")
-    
-    local conn
-    conn = game:GetService("RunService").Heartbeat:Connect(function()
-        if not tpWalking or not character or not humanoid or not humanoid.Parent then 
-            conn:Disconnect()
+
+    -- Desconecta anterior se houver
+    if tpWalkingConnection then
+        tpWalkingConnection:Disconnect()
+    end
+
+    tpWalkingConnection = RunService.Heartbeat:Connect(function(deltaTime)
+        if not tpWalking or not character or not humanoid or not humanoid.Parent then
+            tpWalkingConnection:Disconnect()
             return
         end
-        
-        local delta = game:GetService("RunService").Heartbeat:Wait()
+
         if humanoid.MoveDirection.Magnitude > 0 then
-            character:TranslateBy(humanoid.MoveDirection * TpWalkSpeed * delta * 10)
+            character:TranslateBy(humanoid.MoveDirection * TpWalkSpeed * deltaTime * 10)
         end
     end)
 end
 
+
 local function StopTeleportWalk()
     tpWalking = false
+    if tpWalkingConnection then
+        tpWalkingConnection:Disconnect()
+        tpWalkingConnection = nil
+    end
 end
 
+-- Slider para velocidade
 local TpWalkSpeedSlider = PlayerTab:CreateSlider({
     Name = "Teleport Walk Speed",
     Description = "Adjust movement speed multiplier",
     Range = {0.1, 5},
     Increment = 0.1,
-    CurrentValue = 0.5,
+    CurrentValue = TpWalkSpeed,
     Callback = function(Value)
-    TpWalkSpeed = Value
+        TpWalkSpeed = Value
         if TpWalkToggle and TpWalkToggle.CurrentValue then
             StopTeleportWalk()
-            StartTeleportWalk(TpWalkSpeed)
+            StartTeleportWalk()
         end
     end
 })
 
+-- Toggle para ativar/desativar o modo
 local TpWalkToggle = PlayerTab:CreateToggle({
     Name = "🚀 Teleport Walk",
     Description = "Enhanced movement speed",
@@ -1027,7 +1067,7 @@ local TpWalkToggle = PlayerTab:CreateToggle({
                 ImageSource = "Material",
                 Content = "Teleport Walk activated"
             })
-            StartTeleportWalk(TpWalkSpeed)
+            StartTeleportWalk()
         else
             sound(17208361335)
             Poltergeist:Notification({
@@ -1041,13 +1081,15 @@ local TpWalkToggle = PlayerTab:CreateToggle({
     end
 })
 
+-- Reativar ao morrer/respawnar
 localPlayer.CharacterAdded:Connect(function()
     if TpWalkToggle and TpWalkToggle.CurrentValue then
         StopTeleportWalk()
         task.wait(0.5)
-        StartTeleportWalk(TpWalkSpeed)
+        StartTeleportWalk()
     end
 end)
+
 
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
@@ -1370,6 +1412,18 @@ local MZD = PlayerTab:CreateSlider({
      player.CameraMaxZoomDistance = Value
     end
 })
+OthersTab:CreateSection("Config")
+
+OthersTab:CreateSection("Generator ESP")
+GeneratorESPColorPicker = OthersTab:CreateColorPicker({
+    Name = "Generator ESP color",
+    Color = Color3.fromRGB(0, 255, 0),
+    Callback = function(Value)
+        print(Value)
+    end
+})
+
+OthersTab:CreateSection("Other Hubs")
 
 -- Other Scripts
 local GDscript = OthersTab:CreateButton({
@@ -1421,7 +1475,7 @@ local IYscript = OthersTab:CreateButton({
     Name = "Infinite Yield",
     Description = "Loads Infinite Yield (great universal script)",
     Callback = function()
-   loadstring(game:HttpGet('https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source'))()
+        loadstring(game:HttpGet('https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source'))()
         sound(8486683243)
         Poltergeist:Notification({ 
             Title = "Notification",
@@ -1436,7 +1490,7 @@ local ikHub = OthersTab:CreateButton({
     Name = "Iriska Hub",
     Description = "Dandy's World script made by hex233222 (🐱🐱🐱🐱🐱🐱)",
     Callback = function()
-loadstring(game:HttpGet("https://rawscripts.net/raw/Dandy's-World-ALPHA-Zyra-Hub-24675"))()
+        loadstring(game:HttpGet("https://rawscripts.net/raw/Dandy's-World-ALPHA-Zyra-Hub-24675"))()
         sound(8486683243)
         Poltergeist:Notification({ 
             Title = "Notification",
