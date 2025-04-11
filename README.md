@@ -123,7 +123,7 @@ local function UpdateGeneratorESP()
                 local stats = obj:FindFirstChild("Stats")
                 if stats and stats:FindFirstChild("Completed") then
                     if not stats.Completed.Value and not generatorCache[obj] then
-                        createESP(obj, "Generator", Color3.fromRGB(GeneratorEspColor))
+                        createESP(obj, "Generator", GeneratorEspColor)
                         generatorCache[obj] = true
                     elseif stats.Completed.Value and generatorCache[obj] then
                         if obj:FindFirstChild("GeneratorHighlight") then obj.GeneratorHighlight:Destroy() end
