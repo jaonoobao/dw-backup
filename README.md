@@ -1,3 +1,4 @@
+print("Loading")
 -- Dandy's World
 local TpWalkSpeed = 0.5
 local ttg = false
