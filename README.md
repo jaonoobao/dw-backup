@@ -99,16 +99,10 @@ local function createESP(object, name, color, offset)
 end
 
 local function updateDistanceESP(object, name)
-    if not object or not object:FindFirstChild(name.."ESP") then return end
-    
-    local root = object:FindFirstChild("HumanoidRootPart") or object:FindFirstChild("Main") or object.PrimaryPart
-    if not root then return end
-    
-    local localHead = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Head")
-    if not localHead then return end
-    if ShowGeneratorAmount then
     local Amount = object.Stats.CurrentAmount
-       object[name.."ESP"].TextLabel.Text = string.format("%s [%.1fm]", name, Amount)
+    if not object or not object:FindFirstChild(name.."ESP") then return end
+    if ShowGeneratorAmount then
+       object[name.."ESP"].TextLabel.Text = Amount.."%"
        else
         object[name.."ESP"].TextLabel.Text = ""
     end
